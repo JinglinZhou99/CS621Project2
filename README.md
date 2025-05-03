@@ -16,13 +16,6 @@ Navigate to the NS-3 'src' directory
 cd ~/ns-allinone-3.44/ns-3.44/ns-3-dev/src
 ```
 
-Create a dir for course project
-
-```bash
-mkdir CS621
-cd CS621
-```
-
 Clone Github project using HTTPS
 
 ```bash
