@@ -5,41 +5,50 @@
 #include "ns3/object.h"
 #include "filter.h"
 #include <queue>
+#include <vector>
 
 namespace ns3 {
 
-class TrafficClass : public Object {
+class TrafficClass {
 public:
-    static TypeId GetTypeId(void);
-
     TrafficClass();
-    virtual ~TrafficClass();
 
-    // Enqueue a packet into this TrafficClass
+    // Default status of the traffic class
+    void SetDefault(bool d);
+    bool GetDefault();
+
+    // Queue operations
     bool Enqueue(Ptr<Packet> p);
-
-    // Dequeue a packet from this TrafficClass
     Ptr<Packet> Dequeue();
+    Ptr<Packet> Remove();
+    Ptr<const Packet> Peek();
+    bool IsEmpty()
 
     // Check if the TrafficClass matches the packet
-    bool Match(Ptr<Packet> p) const;
+    bool match(Ptr<Packet> p);
 
-   // Getters and setters for TrafficClass properties
-    void SetMaxPackets(uint32_t maxPackets);
-    uint32_t GetMaxPackets() const;
-    void SetWeight(double weight);
-    double GetWeight() const;
-    void SetPriorityLevel(uint32_t priorityLevel);
-    uint32_t GetPriorityLevel() const;
-    void AddFilter(Ptr<Filter> filter);
-    uint32_t GetPacketCount() const;
+    // Max number of packets in the traffic class
+    void SetMaxPackets(uint32_t max_p);
+
+    // Weight of the traffic class
+    void SetWeight(double_t w);
+    double_t GetWeight();
+
+    // Priority level of the traffic class
+    void SetPriorityLevel(uint32_t level);
+    uint32_t GetPriorityLevel();
+
+    void AddFilter(Filter* filter);
+    uint32_t GetSize();
+    std::vector<Filter*> filters;
 
 private:
-    std::queue<Ptr<Packet>> m_packets; // Queue of packets
-    uint32_t m_maxPackets;             // Maximum number of packets allowed
-    double m_weight;                   // Weight for DRR
-    uint32_t m_priorityLevel;          // Priority level for SPQ
-    std::vector<Ptr<Filter>> m_filters; // Collection of filters
+    std::queue<Ptr<Packet>> m_queue; // Queue of packets
+    uint32_t maxPackets;             // Maximum number of packets allowed
+    double_t weight;                   // Weight for DRR
+    uint32_t priority_level;          // Priority level for SPQ
+    bool isDefault;
+    uint32_t packets;
 };
 
 } // namespace ns3

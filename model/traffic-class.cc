@@ -1,97 +1,121 @@
 #include "traffic-class.h"
-#include "ns3/log.h"
 
 namespace ns3 {
 
-NS_LOG_COMPONENT_DEFINE("TrafficClass");
-
-NS_OBJECT_ENSURE_REGISTERED(TrafficClass);
-
-TypeId TrafficClass::GetTypeId(void) {
-    static TypeId tid = TypeId("ns3::TrafficClass")
-        .SetParent<ns3::Object>()
-        .SetGroupName("Network")
-        .AddConstructor<TrafficClass>();
-    return tid;
-}
-
-TrafficClass::TrafficClass()
-    : m_maxPackets(100), m_weight(1.0), m_priorityLevel(0) {
-    NS_LOG_FUNCTION(this);
-}
-
-TrafficClass::~TrafficClass() {
-    NS_LOG_FUNCTION(this);
-    m_packets = std::queue<Ptr<Packet>>();
-    m_filters.clear();
-}
+TrafficClass::TrafficClass() : packets(0) {}
 
 bool TrafficClass::Enqueue(Ptr<Packet> p) {
-    NS_LOG_FUNCTION(this << p);
 
-    if (m_packets.size() >= m_maxPackets) {
-        NS_LOG_WARN("Queue is full, dropping packet");
+    if (packets >= maxPackets) {
         return false;
     }
 
-    m_packets.push(p);
+    m_queue.push(p);
+    packets++;
     return true;
 }
 
 Ptr<Packet> TrafficClass::Dequeue() {
-    NS_LOG_FUNCTION(this);
-
-    if (m_packets.empty()) {
+    if (m_queue.empty()) {
         return nullptr;
     }
 
-    Ptr<Packet> p = m_packets.front();
-    m_packets.pop();
+    Ptr<Packet> p = m_queue.front();
+    m_queue.pop();
+    packets--;
     return p;
 }
 
-bool TrafficClass::Match(Ptr<Packet> p) const {
-    NS_LOG_FUNCTION(this << p);
+Ptr<Packet>
+TrafficClass::Remove()
+{
+    if (m_queue.empty())
+    {
+        std::cout << "Queue empty." << std::endl;
+        return nullptr;
+    }
+    Ptr<Packet> p = m_queue.front();
+    m_queue.pop();
+    packets--;
+    return p;
+}
 
-    // A packet matches if it satisfies any of the filters
-    for (const auto& filter : m_filters) {
-        if (filter->Match(p)) {
-            return true;
+Ptr<const Packet> TrafficClass::Peek()
+{
+    if (IsEmpty())
+    {
+        std::cout << "Queue empty." << std::endl;
+        return nullptr;
+    }
+    Ptr<Packet> p = m_queue.front();
+    return p;
+}
+
+bool TrafficClass::match(Ptr<Packet> p)
+{
+    if (filters.size() == 0)
+    {
+        return 1;
+    }
+    for (Filter *filter : filters)
+    {
+        if (filter->match(p))
+        {
+            return 1;
         }
     }
-    return false;
+    return 0;
 }
 
-void TrafficClass::SetMaxPackets(uint32_t maxPackets) {
-    m_maxPackets = maxPackets;
+bool TrafficClass::IsEmpty()
+{
+    return packets == 0;
 }
 
-uint32_t TrafficClass::GetMaxPackets() const {
-    return m_maxPackets;
+uint32_t TrafficClass::GetSize()
+{
+    return m_queue.size();
 }
 
-void TrafficClass::SetWeight(double weight) {
-    m_weight = weight;
+void TrafficClass::AddFilter(Filter *filter)
+{
+    filters.push_back(filter);
 }
 
-double TrafficClass::GetWeight() const {
-    return m_weight;
+void TrafficClass::SetMaxPackets(uint32_t max)
+{
+    maxPackets = max;
 }
 
-void TrafficClass::SetPriorityLevel(uint32_t priorityLevel) {
-    m_priorityLevel = priorityLevel;
+void TrafficClass::SetWeight(double_t w)
+{
+    weight = w;
 }
 
-uint32_t TrafficClass::GetPriorityLevel() const {
-    return m_priorityLevel;
+double_t TrafficClass::GetWeight()
+{
+    return weight;
 }
 
-void TrafficClass::AddFilter(Ptr<Filter> filter) {
-    m_filters.push_back(filter);
+void
+TrafficClass::SetPriorityLevel(uint32_t level)
+{
+    priority_level = level;
 }
 
-uint32_t TrafficClass::GetPacketCount() const {
-    return m_packets.size();
+uint32_t TrafficClass::GetPriorityLevel()
+{
+    return priority_level;
+}
+
+void TrafficClass::SetDefault(bool default_queue)
+{
+    isDefault = default_queue;
+}
+
+bool TrafficClass::GetDefault()
+{
+    return isDefault;
 }
 
 } // namespace ns3
