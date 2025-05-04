@@ -22,7 +22,7 @@ private:
 public:
     SrcIPAddress(Ipv4Address addr);
     bool match(Ptr<Packet> p) const override;
-}
+};
 
 /** SrcMask subclass */
 class SrcMask : public FilterElement {

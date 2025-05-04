@@ -22,7 +22,7 @@ public:
     Ptr<Packet> Dequeue();
     Ptr<Packet> Remove();
     Ptr<const Packet> Peek();
-    bool IsEmpty()
+    bool IsEmpty();
 
     // Check if the TrafficClass matches the packet
     bool match(Ptr<Packet> p);
