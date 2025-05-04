@@ -9,25 +9,22 @@ namespace ns3 {
 
 class DiffServ : public Queue<Packet> {
 public:
-    static TypeId GetTypeId(void);
-
     DiffServ();
-    virtual ~DiffServ();
-
-    // Pure virtual methods for classification and scheduling
+    bool Enqueue(Ptr<Packet> p) override;
+    Ptr<Packet> Dequeue() override;
+    Ptr<Packet> Remove() override;
+    Ptr<const Packet> Peek() const override;
     virtual uint32_t Classify(Ptr<Packet> p) = 0;
-    virtual Ptr<Packet> Schedule() = 0;
-
+    virtual Ptr<const Packet> Schedule() const = 0;
+    virtual void AddQueue (TrafficClass *q);
 protected:
-    // Override Queue methods
-    virtual bool DoEnqueue(Ptr<Packet> p);
-    virtual Ptr<Packet> DoDequeue();
-    virtual Ptr<Packet> DoRemove();
-    virtual Ptr<Packet> DoPeek() const;
+    bool DoEnqueue(Ptr<Packet> p);
+    Ptr<Packet> DoDequeue();
+    Ptr<Packet> DoRemove();
+    Ptr<const Packet> DoPeek() const;
 
-    std::vector<Ptr<TrafficClass>> q_class; // Vector of TrafficClass pointers
+    std::vector<TrafficClass*> q_class;
+    srd::vector<TrafficClass*> GetQueues() const;
 };
-
 } // namespace ns3
-
 #endif /* DIFFSERV_H */
