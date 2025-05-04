@@ -11,11 +11,9 @@ namespace ns3 {
 class Filter : public Object {
 public:
     Filter();
-
     bool match(Ptr<Packet> p);
+    void AddElement(FilterElement* elem);
 
-    // Add a FilterElement to the collection
-    void AddElement(FilterElement *elem);
     std::vector<FilterElement*> elements;
 };
 

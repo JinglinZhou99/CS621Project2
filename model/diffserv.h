@@ -16,7 +16,9 @@ public:
     Ptr<const Packet> Peek() const override;
     virtual uint32_t Classify(Ptr<Packet> p) = 0;
     virtual Ptr<const Packet> Schedule() const = 0;
-    virtual void AddQueue (TrafficClass *q);
+    void AddQueue(TrafficClass* q);
+    std::vector<TrafficClass*> GetQueues() const;
+
 protected:
     bool DoEnqueue(Ptr<Packet> p);
     Ptr<Packet> DoDequeue();
@@ -24,7 +26,8 @@ protected:
     Ptr<const Packet> DoPeek() const;
 
     std::vector<TrafficClass*> q_class;
-    std::vector<TrafficClass*> GetQueues() const;
 };
+
 } // namespace ns3
+
 #endif /* DIFFSERV_H */
