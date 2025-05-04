@@ -10,91 +10,74 @@
 
 namespace ns3 {
 
-class FilterElement {
+class FilterElement : public Object {
 public:
-    // Pure virtual method to check if the packet matches the condition
     virtual bool match(Ptr<Packet> p) const = 0;
 };
 
 class SrcIPAddress : public FilterElement {
-private:
-    Ipv4Address default_address;
 public:
     SrcIPAddress(Ipv4Address addr);
     bool match(Ptr<Packet> p) const override;
+
+private:
+    Ipv4Address default_address;
 };
 
-/** SrcMask subclass */
 class SrcMask : public FilterElement {
+public:
+    SrcMask(Ipv4Address addr, Ipv4Mask mask);
+    bool match(Ptr<Packet> p) const override;
+
 private:
     Ipv4Address default_address;
     Ipv4Mask default_mask;
+};
 
+class SrcPortNumber : public FilterElement {
 public:
-    SrcMask(Ipv4Address addr, Ipv4Mask mask);
-
+    SrcPortNumber(uint32_t port);
     bool match(Ptr<Packet> p) const override;
+
+private:
+    uint32_t default_port;
 };
 
-/** SrcPortNumber subclass */
-class SrcPortNumber : public FilterElement
-{
-    private:
-        uint32_t default_port;
+class DstIPAddress : public FilterElement {
+public:
+    DstIPAddress(Ipv4Address addr);
+    bool match(Ptr<Packet> p) const override;
 
-    public:
-        SrcPortNumber(uint32_t port);
-
-        bool match(Ptr<Packet> p) const override;
+private:
+    Ipv4Address default_address;
 };
 
-/** DstIPAddress subclass */
-class DstIPAddress : public FilterElement
-{
-    private:
-        Ipv4Address default_address;
+class DstMask : public FilterElement {
+public:
+    DstMask(Ipv4Address addr, Ipv4Mask mask);
+    bool match(Ptr<Packet> p) const override;
 
-    public:
-        DstIPAddress(Ipv4Address addr);
-
-        bool match(Ptr<Packet> p) const override;
+private:
+    Ipv4Address default_address;
+    Ipv4Mask default_mask;
 };
 
-/** DstMask subclass */
-class DstMask : public FilterElement
-{
-    private:
-        Ipv4Address default_address;
-        Ipv4Mask default_mask;
+class DstPortNumber : public FilterElement {
+public:
+    DstPortNumber(uint32_t port);
+    bool match(Ptr<Packet> p) const override;
 
-    public:
-        DstMask(Ipv4Address addr, Ipv4Mask mask);
-
-        bool match(Ptr<Packet> p) const override;
+private:
+    uint32_t default_port;
 };
 
-/** DstPortNumber subclass */
-class DstPortNumber : public FilterElement
-{
-    private:
-        uint32_t default_port;
+class ProtocolNumber : public FilterElement {
+public:
+    ProtocolNumber(uint32_t protocol);
+    bool match(Ptr<Packet> p) const override;
 
-    public:
-        DstPortNumber(uint32_t port);
-
-        bool match(Ptr<Packet> p) const override;
-};
-
-/** ProtocolNumber subclass */
-class ProtocolNumber : public FilterElement
-{
-    private:
-        uint32_t default_protocol;
-
-    public:
-        ProtocolNumber(uint32_t protocol);
-
-        bool match(Ptr<Packet> p) const override;
+private:
+    uint32_t default_protocol;
 };
 
 } // namespace ns3

@@ -1,10 +1,11 @@
 #include "diffserv.h"
+#include "ns3/packet.h"
 
 namespace ns3 {
 
 DiffServ::DiffServ() {}
 
-bool DiffServ::Enqueue(Ptr<Packet> p){
+bool DiffServ::Enqueue(Ptr<Packet> p) {
     return DoEnqueue(p);
 }
 
@@ -22,8 +23,7 @@ Ptr<Packet> DiffServ::Dequeue() {
 
 Ptr<Packet> DiffServ::DoDequeue() {
     Ptr<const Packet> dpacket = Schedule();
-    if (dpacket)
-    {
+    if (dpacket) {
         uint32_t index = Classify(dpacket->Copy());
         return q_class[index]->Dequeue();
     }
@@ -36,8 +36,7 @@ Ptr<Packet> DiffServ::Remove() {
 
 Ptr<Packet> DiffServ::DoRemove() {
     Ptr<const Packet> rpacket = Schedule();
-    if (rpacket != nullptr)
-    {
+    if (rpacket != nullptr) {
         uint32_t index = Classify(rpacket->Copy());
         return q_class[index]->Remove();
     }
@@ -49,33 +48,16 @@ Ptr<const Packet> DiffServ::Peek() const {
 }
 
 Ptr<const Packet> DiffServ::DoPeek() const {
-    Ptr<const Packet> next_packet = Schedule()->Copy();
-    return next_packet;
+    Ptr<const Packet> next_packet = Schedule();
+    return next_packet ? next_packet->Copy() : nullptr;
 }
 
-uint32_t DiffServ::Classify(Ptr<Packet> p) {
-    uint32_t index = -1;
-    for (int i = 0; i < q_class.size(); i++)
-    {
-        if (q_class[i]->match(p))
-        {
-            return i;
-        }
-        if (q_class[i]->GetDefault())
-        {
-            index = i;
-        }
-    }
-    return index;
-}
-
-void DiffServ::AddQueue(TrafficClass* trafficClass)
-{
+void DiffServ::AddQueue(TrafficClass* trafficClass) {
     q_class.push_back(trafficClass);
 }
 
-std::vector<TrafficClass*> DiffServ::GetQueues() const
-{
+std::vector<TrafficClass*> DiffServ::GetQueues() const {
     return q_class;
 }
+
 } // namespace ns3
