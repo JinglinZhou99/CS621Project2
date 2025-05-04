@@ -8,7 +8,7 @@ bool Filter::match(Ptr<Packet> p) {
 
     // A packet matches if it satisfies all FilterElement conditions
     for (FilterElement *elem : elements) {
-        if (!elem->Match(p)) {
+        if (!elem->match(p)) {
             return false;
         }
     }

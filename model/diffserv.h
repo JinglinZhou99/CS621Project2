@@ -24,7 +24,7 @@ protected:
     Ptr<const Packet> DoPeek() const;
 
     std::vector<TrafficClass*> q_class;
-    srd::vector<TrafficClass*> GetQueues() const;
+    std::vector<TrafficClass*> GetQueues() const;
 };
 } // namespace ns3
 #endif /* DIFFSERV_H */

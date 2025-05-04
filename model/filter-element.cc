@@ -1,4 +1,10 @@
-#include "filter_elements.h"
+#include "filter-element.h"
+#include "ns3/ppp-header.h"
+#include "ns3/udp-header.h"
+#include "ns3/tcp-header.h"
+#include "ns3/ipv4-header.h"
+#include "ns3/udp-l4-protocol.h"
+#include "ns3/tcp-l4-protocol.h"
 
 /** SrcIPAddress constructor */
 SrcIPAddress::SrcIPAddress(Ipv4Address addr) : default_address(addr) {}
