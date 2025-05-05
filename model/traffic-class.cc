@@ -72,11 +72,11 @@ void TrafficClass::SetMaxPackets(uint32_t max) {
     maxPackets = max;
 }
 
-void TrafficClass::SetWeight(double_t w) {
+void TrafficClass::SetWeight(double w) {  // Changed double_t to double
     weight = w;
 }
 
-double_t TrafficClass::GetWeight() {
+double TrafficClass::GetWeight() {        // Changed double_t to double
     return weight;
 }
 
