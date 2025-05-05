@@ -1,0 +1,4 @@
+queue 0 2 1000
+queue 1 1 1000
+filter 0 src_port 5000
+filter 1 src_port 5001

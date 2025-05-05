@@ -25,8 +25,8 @@ public:
     bool match(Ptr<Packet> p);
 
     void SetMaxPackets(uint32_t max_p);
-    void SetWeight(double_t w);
-    double_t GetWeight();
+    void SetWeight(double w);  // Changed double_t to double
+    double GetWeight();        // Changed double_t to double
     void SetPriorityLevel(uint32_t level);
     uint32_t GetPriorityLevel();
     void AddFilter(Filter* filter);
@@ -37,7 +37,7 @@ public:
 private:
     std::queue<Ptr<Packet>> m_queue;
     uint32_t maxPackets;
-    double_t weight;
+    double weight;            // Changed double_t to double
     uint32_t priority_level;
     bool isDefault;
     uint32_t packets;
