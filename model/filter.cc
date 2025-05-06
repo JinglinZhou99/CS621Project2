@@ -5,17 +5,27 @@ namespace ns3 {
 
 Filter::Filter() {}
 
-bool Filter::match(Ptr<Packet> p) {
+Filter::~Filter() {
+    // Clean up elements
     for (FilterElement* elem : elements) {
-        if (!elem->match(p)) {
+        delete elem;
+    }
+}
+
+bool Filter::match(Ptr<Packet> p) {
+    for (size_t i = 0; i < elements.size(); ++i) {
+        if (!elements[i]->match(p)) {
+            std::cout << "Filter::match: Packet rejected by element " << i << std::endl;
             return false;
         }
     }
+    std::cout << "Filter::match: Packet accepted by all " << elements.size() << " elements" << std::endl;
     return true;
 }
 
 void Filter::AddElement(FilterElement* elem) {
     elements.push_back(elem);
+    std::cout << "Filter::AddElement: Added element, total elements=" << elements.size() << std::endl;
 }
 
 } // namespace ns3

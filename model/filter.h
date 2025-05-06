@@ -11,6 +11,8 @@ namespace ns3 {
 class Filter : public Object {
 public:
     Filter();
+    virtual ~Filter();
+
     bool match(Ptr<Packet> p);
     void AddElement(FilterElement* elem);
 

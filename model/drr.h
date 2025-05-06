@@ -2,28 +2,29 @@
 #define DRR_H
 
 #include "diffserv.h"
-#include <string>
+#include "traffic-class.h"
+#include "ns3/ptr.h"
 #include <vector>
+#include <utility> // For std::pair
 
 namespace ns3 {
 
 class DRR : public DiffServ {
 public:
+    static TypeId GetTypeId(void);
     DRR();
     virtual ~DRR();
-    static TypeId GetTypeId(void);
-    void ReadConfigFile(std::string filename);
 
-protected:
-    virtual Ptr<const Packet> Schedule(void) const override;
-    virtual uint32_t Classify(Ptr<Packet> p) override;
+    virtual std::pair<uint32_t, Ptr<const Packet>> Schedule(void);
+    virtual uint32_t Classify(Ptr<Packet> p);
+    bool ReadConfigFile(std::string filename);
+    virtual void ParseConfigLine(const std::string& line);
 
 private:
-    void ParseConfigLine(const std::string& line);
-    mutable std::vector<uint32_t> deficits; // Deficit counters for each queue
-    mutable uint32_t currentQueue; // Current queue index for round-robin
+    uint32_t currentQueue;
+    std::vector<double> deficits;
 };
 
 } // namespace ns3
 
-#endif /* DRR_H */
+#endif // DRR_H
