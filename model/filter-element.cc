@@ -15,7 +15,10 @@ bool SrcIPAddress::match(Ptr<Packet> p) const {
     p_copy->RemoveHeader(pppHeader);
     Ipv4Header header;
     p_copy->PeekHeader(header);
-    return header.GetSource() == default_address;
+    bool matches = (header.GetSource() == default_address);
+    std::cout << "SrcIPAddress::match: Source IP=" << header.GetSource() 
+              << ", expected=" << default_address << ", match=" << (matches ? "true" : "false") << std::endl;
+    return matches;
 }
 
 SrcMask::SrcMask(Ipv4Address addr, Ipv4Mask mask) : default_address(addr), default_mask(mask) {}
@@ -26,7 +29,11 @@ bool SrcMask::match(Ptr<Packet> p) const {
     p_copy->RemoveHeader(pppHeader);
     Ipv4Header header;
     p_copy->PeekHeader(header);
-    return default_mask.IsMatch(header.GetSource(), default_address);
+    bool matches = default_mask.IsMatch(header.GetSource(), default_address);
+    std::cout << "SrcMask::match: Source IP=" << header.GetSource() 
+              << ", expected=" << default_address << ", mask=" << default_mask 
+              << ", match=" << (matches ? "true" : "false") << std::endl;
+    return matches;
 }
 
 SrcPortNumber::SrcPortNumber(uint32_t port) : default_port(port) {}
@@ -41,12 +48,19 @@ bool SrcPortNumber::match(Ptr<Packet> p) const {
     if (protocol == 17) { // UDP
         UdpHeader udpHeader;
         p_copy->PeekHeader(udpHeader);
-        return udpHeader.GetSourcePort() == default_port;
+        bool matches = (udpHeader.GetSourcePort() == default_port);
+        std::cout << "SrcPortNumber::match: Protocol=UDP, Source Port=" << udpHeader.GetSourcePort() 
+                  << ", expected=" << default_port << ", match=" << (matches ? "true" : "false") << std::endl;
+        return matches;
     } else if (protocol == 6) { // TCP
         TcpHeader tcpHeader;
         p_copy->PeekHeader(tcpHeader);
-        return tcpHeader.GetSourcePort() == default_port;
+        bool matches = (tcpHeader.GetSourcePort() == default_port);
+        std::cout << "SrcPortNumber::match: Protocol=TCP, Source Port=" << tcpHeader.GetSourcePort() 
+                  << ", expected=" << default_port << ", match=" << (matches ? "true" : "false") << std::endl;
+        return matches;
     }
+    std::cout << "SrcPortNumber::match: Unknown protocol=" << static_cast<uint32_t>(protocol) << ", no match" << std::endl;
     return false;
 }
 
@@ -58,7 +72,10 @@ bool DstIPAddress::match(Ptr<Packet> p) const {
     p_copy->RemoveHeader(pppHeader);
     Ipv4Header header;
     p_copy->PeekHeader(header);
-    return header.GetDestination() == default_address;
+    bool matches = (header.GetDestination() == default_address);
+    std::cout << "DstIPAddress::match: Destination IP=" << header.GetDestination() 
+              << ", expected=" << default_address << ", match=" << (matches ? "true" : "false") << std::endl;
+    return matches;
 }
 
 DstMask::DstMask(Ipv4Address addr, Ipv4Mask mask) : default_address(addr), default_mask(mask) {}
@@ -69,7 +86,11 @@ bool DstMask::match(Ptr<Packet> p) const {
     p_copy->RemoveHeader(pppHeader);
     Ipv4Header header;
     p_copy->PeekHeader(header);
-    return default_mask.IsMatch(header.GetDestination(), default_address); // Fixed: Use GetDestination
+    bool matches = default_mask.IsMatch(header.GetDestination(), default_address);
+    std::cout << "DstMask::match: Destination IP=" << header.GetDestination() 
+              << ", expected=" << default_address << ", mask=" << default_mask 
+              << ", match=" << (matches ? "true" : "false") << std::endl;
+    return matches;
 }
 
 DstPortNumber::DstPortNumber(uint32_t port) : default_port(port) {}
@@ -84,12 +105,19 @@ bool DstPortNumber::match(Ptr<Packet> p) const {
     if (protocol == 17) { // UDP
         UdpHeader udpHeader;
         p_copy->PeekHeader(udpHeader);
-        return udpHeader.GetDestinationPort() == default_port;
+        bool matches = (udpHeader.GetDestinationPort() == default_port);
+        std::cout << "DstPortNumber::match: Protocol=UDP, Destination Port=" << udpHeader.GetDestinationPort() 
+                  << ", expected=" << default_port << ", match=" << (matches ? "true" : "false") << std::endl;
+        return matches;
     } else if (protocol == 6) { // TCP
         TcpHeader tcpHeader;
         p_copy->PeekHeader(tcpHeader);
-        return tcpHeader.GetDestinationPort() == default_port;
+        bool matches = (tcpHeader.GetDestinationPort() == default_port);
+        std::cout << "DstPortNumber::match: Protocol=TCP, Destination Port=" << tcpHeader.GetDestinationPort() 
+                  << ", expected=" << default_port << ", match=" << (matches ? "true" : "false") << std::endl;
+        return matches;
     }
+    std::cout << "DstPortNumber::match: Unknown protocol=" << static_cast<uint32_t>(protocol) << ", no match" << std::endl;
     return false;
 }
 
@@ -101,7 +129,10 @@ bool ProtocolNumber::match(Ptr<Packet> p) const {
     p_copy->RemoveHeader(pppHeader);
     Ipv4Header header;
     p_copy->PeekHeader(header);
-    return header.GetProtocol() == default_protocol;
+    bool matches = (header.GetProtocol() == default_protocol);
+    std::cout << "ProtocolNumber::match: Protocol=" << static_cast<uint32_t>(header.GetProtocol()) 
+              << ", expected=" << default_protocol << ", match=" << (matches ? "true" : "false") << std::endl;
+    return matches;
 }
 
 } // namespace ns3

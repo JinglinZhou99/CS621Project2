@@ -2,25 +2,26 @@
 #define SPQ_H
 
 #include "diffserv.h"
-#include <string>
+#include "traffic-class.h"
+#include "ns3/ptr.h"
+#include <utility> // For std::pair
 
 namespace ns3 {
 
 class SPQ : public DiffServ {
 public:
+    static TypeId GetTypeId(void);
     SPQ();
     virtual ~SPQ();
-    static TypeId GetTypeId(void);
-    void ReadConfigFile(std::string filename);
 
-protected:
-    virtual Ptr<const Packet> Schedule(void) const override;
-    virtual uint32_t Classify(Ptr<Packet> p) override;
+    virtual std::pair<uint32_t, Ptr<const Packet>> Schedule(void);
+    virtual uint32_t Classify(Ptr<Packet> p);
+    bool ReadConfigFile(std::string filename);
+    virtual void ParseConfigLine(const std::string& line);
 
 private:
-    void ParseConfigLine(const std::string& line);
 };
 
 } // namespace ns3
 
-#endif /* SPQ_H */
+#endif // SPQ_H
