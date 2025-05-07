@@ -8,13 +8,6 @@
 
 namespace ns3 {
 
-/**
- * \brief A base class for Differentiated Services (DiffServ) queue implementations.
- *
- * This class provides a framework for implementing DiffServ-based queues in ns-3.
- * Derived classes must implement the Classify and Schedule methods to define
- * how packets are assigned to queues and scheduled for transmission.
- */
 class DiffServ : public Queue<Packet> {
 public:
     DiffServ();
