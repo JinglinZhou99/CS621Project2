@@ -13,22 +13,40 @@ void PacketSentCallback(Ptr<const Packet> packet) {
     std::cout << "Packet sent at time " << Simulator::Now().GetSeconds() << "s, size=" << packet->GetSize() << " bytes" << std::endl;
 }
 
-void PacketReceivedCallback(Ptr<const Packet> packet, const Address &address) { // Updated to include Address
+void PacketReceivedCallback(Ptr<const Packet> packet, const Address &address) {
     std::cout << "Packet received at time " << Simulator::Now().GetSeconds() << "s, size=" << packet->GetSize() 
               << " bytes, from address " << address << std::endl;
 }
 
-void CalculateThroughput(Ptr<FlowMonitor> monitor, std::ofstream& outFile, Time interval) {
+void CalculateThroughput(Ptr<FlowMonitor> monitor, FlowMonitorHelper& flowmonHelper, std::ofstream& outFile, Time interval) {
     monitor->CheckForLostPackets();
     auto flowStats = monitor->GetFlowStats();
     std::cout << "CalculateThroughput called at time: " << Simulator::Now().GetSeconds() << "s, flows: " << flowStats.size() << std::endl;
+
+    // Map of flow ID to destination port for filtering
+    std::map<uint32_t, uint16_t> flowToPort;
     for (auto it = flowStats.begin(); it != flowStats.end(); ++it) {
-        double throughput = (it->second.rxBytes * 8.0) / (it->second.timeLastRxPacket.GetSeconds() - it->second.timeFirstTxPacket.GetSeconds()) / 1e6;
-        std::cout << "Flow " << it->first << ": rxBytes=" << it->second.rxBytes << ", timeLastRx=" << it->second.timeLastRxPacket.GetSeconds() 
-                  << ", timeFirstTx=" << it->second.timeFirstTxPacket.GetSeconds() << ", throughput=" << throughput << " Mbps" << std::endl;
-        outFile << Simulator::Now().GetSeconds() << " " << it->first << " " << throughput << std::endl;
+        FlowId flowId = it->first;
+        Ptr<FlowClassifier> classifier = flowmonHelper.GetClassifier();
+        Ipv4FlowClassifier::FiveTuple tuple = dynamic_cast<Ipv4FlowClassifier*>(&(*classifier))->FindFlow(flowId);
+        flowToPort[flowId] = tuple.destinationPort;
     }
-    Simulator::Schedule(interval, &CalculateThroughput, monitor, std::ref(outFile), interval);
+
+    for (auto it = flowStats.begin(); it != flowStats.end(); ++it) {
+        uint32_t flowId = it->first;
+        uint16_t dstPort = flowToPort[flowId];
+        // Only process flows with destination ports 6000, 7000, or 9000
+        if (dstPort != 6000 && dstPort != 7000 && dstPort != 9000) {
+            continue;
+        }
+        double throughput = (it->second.rxBytes * 8.0) / (it->second.timeLastRxPacket.GetSeconds() - it->second.timeFirstTxPacket.GetSeconds()) / 1e6;
+        std::cout << "Flow " << flowId << " (dstPort=" << dstPort << "): rxBytes=" << it->second.rxBytes 
+                  << ", timeLastRx=" << it->second.timeLastRxPacket.GetSeconds() 
+                  << ", timeFirstTx=" << it->second.timeFirstTxPacket.GetSeconds() 
+                  << ", throughput=" << throughput << " Mbps" << std::endl;
+        outFile << Simulator::Now().GetSeconds() << " " << flowId << " " << throughput << std::endl;
+    }
+    Simulator::Schedule(interval, &CalculateThroughput, monitor, std::ref(flowmonHelper), std::ref(outFile), interval);
 }
 
 int main(int argc, char* argv[]) {
@@ -79,42 +97,51 @@ int main(int argc, char* argv[]) {
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
     // Install applications
-    uint16_t port1 = 5000;
-    uint16_t port2 = 5001;
-    uint16_t port3 = 5002;
+    uint16_t port1 = 6000; // Weight 100
+    uint16_t port2 = 7000; // Weight 200
+    uint16_t port3 = 9000; // Weight 300
 
-    // Application 1 (quantum=3000)
-    BulkSendHelper bulk1("ns3::TcpSocketFactory", InetSocketAddress(if12.GetAddress(1), port1));
-    bulk1.SetAttribute("MaxBytes", UintegerValue(0));
-    ApplicationContainer client1 = bulk1.Install(nodes.Get(0));
-    client1.Start(Seconds(0.0));
+    // Application 1 (port 6000, weight 100)
+    OnOffHelper onOff1("ns3::UdpSocketFactory", InetSocketAddress(if12.GetAddress(1), port1));
+    onOff1.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
+    onOff1.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+    onOff1.SetAttribute("DataRate", StringValue("2Mbps")); // Send at a rate higher than link capacity to ensure saturation
+    onOff1.SetAttribute("PacketSize", UintegerValue(1024));
+    ApplicationContainer client1 = onOff1.Install(nodes.Get(0));
+    client1.Start(Seconds(1.0));
     client1.Stop(Seconds(30.0));
 
-    PacketSinkHelper sink1("ns3::TcpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), port1));
+    PacketSinkHelper sink1("ns3::UdpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), port1));
     ApplicationContainer server1 = sink1.Install(nodes.Get(2));
     server1.Start(Seconds(0.0));
     server1.Stop(Seconds(30.0));
 
-    // Application 2 (quantum=2000)
-    BulkSendHelper bulk2("ns3::TcpSocketFactory", InetSocketAddress(if12.GetAddress(1), port2));
-    bulk2.SetAttribute("MaxBytes", UintegerValue(0));
-    ApplicationContainer client2 = bulk2.Install(nodes.Get(0));
-    client2.Start(Seconds(0.0));
+    // Application 2 (port 7000, weight 200)
+    OnOffHelper onOff2("ns3::UdpSocketFactory", InetSocketAddress(if12.GetAddress(1), port2));
+    onOff2.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
+    onOff2.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+    onOff2.SetAttribute("DataRate", StringValue("2Mbps"));
+    onOff2.SetAttribute("PacketSize", UintegerValue(1024));
+    ApplicationContainer client2 = onOff2.Install(nodes.Get(0));
+    client2.Start(Seconds(1.0));
     client2.Stop(Seconds(30.0));
 
-    PacketSinkHelper sink2("ns3::TcpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), port2));
+    PacketSinkHelper sink2("ns3::UdpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), port2));
     ApplicationContainer server2 = sink2.Install(nodes.Get(2));
     server2.Start(Seconds(0.0));
     server2.Stop(Seconds(30.0));
 
-    // Application 3 (quantum=1000)
-    BulkSendHelper bulk3("ns3::TcpSocketFactory", InetSocketAddress(if12.GetAddress(1), port3));
-    bulk3.SetAttribute("MaxBytes", UintegerValue(0));
-    ApplicationContainer client3 = bulk3.Install(nodes.Get(0));
-    client3.Start(Seconds(0.0));
+    // Application 3 (port 9000, weight 300)
+    OnOffHelper onOff3("ns3::UdpSocketFactory", InetSocketAddress(if12.GetAddress(1), port3));
+    onOff3.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
+    onOff3.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+    onOff3.SetAttribute("DataRate", StringValue("2Mbps"));
+    onOff3.SetAttribute("PacketSize", UintegerValue(1024));
+    ApplicationContainer client3 = onOff3.Install(nodes.Get(0));
+    client3.Start(Seconds(1.0));
     client3.Stop(Seconds(30.0));
 
-    PacketSinkHelper sink3("ns3::TcpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), port3));
+    PacketSinkHelper sink3("ns3::UdpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), port3));
     ApplicationContainer server3 = sink3.Install(nodes.Get(2));
     server3.Start(Seconds(0.0));
     server3.Stop(Seconds(30.0));
@@ -127,12 +154,13 @@ int main(int argc, char* argv[]) {
     server2.Get(0)->TraceConnectWithoutContext("Rx", MakeCallback(&PacketReceivedCallback));
     server3.Get(0)->TraceConnectWithoutContext("Rx", MakeCallback(&PacketReceivedCallback));
 
-    // Enable PCAP tracing on the router device
-    p2p.EnablePcap("drr-router", dev12.Get(0));
+    // Enable PCAP tracing
+    p2p.EnablePcap("predrr", dev01.Get(1)); // Packets entering the router (Host1 to Router)
+    p2p.EnablePcap("postdrr", dev12.Get(0)); // Packets leaving the router (Router to Host2)
 
     // Install FlowMonitor
-    FlowMonitorHelper flowmon;
-    Ptr<FlowMonitor> monitor = flowmon.InstallAll();
+    FlowMonitorHelper flowmonHelper;
+    Ptr<FlowMonitor> monitor = flowmonHelper.InstallAll();
 
     // Open output file for throughput
     std::ofstream outFile("drr-throughput.txt");
@@ -140,7 +168,7 @@ int main(int argc, char* argv[]) {
         std::cerr << "Failed to open drr-throughput.txt" << std::endl;
         return 1;
     }
-    Simulator::Schedule(Seconds(5.0), &CalculateThroughput, monitor, std::ref(outFile), Seconds(1.0));
+    Simulator::Schedule(Seconds(5.0), &CalculateThroughput, monitor, std::ref(flowmonHelper), std::ref(outFile), Seconds(1.0));
 
     // Run simulation
     Simulator::Stop(Seconds(30.0));

@@ -17,9 +17,9 @@ Filter::~Filter() {
 }
 
 bool Filter::match(Ptr<Packet> p) {
-    for (FilterElement* element : elements) {
-        if (!element->match(p)) {
-            std::cout << "Filter::match: Packet rejected by element " << (&element - &elements[0]) << std::endl;
+    for (size_t i = 0; i < elements.size(); ++i) {
+        if (!elements[i]->match(p)) {
+            std::cout << "Filter::match: Packet rejected by element " << i << std::endl;
             return false;
         }
     }

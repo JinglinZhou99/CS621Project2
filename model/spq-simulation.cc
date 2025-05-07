@@ -18,17 +18,35 @@ void PacketReceivedCallback(Ptr<const Packet> packet, const Address &address) {
               << " bytes, from address " << address << std::endl;
 }
 
-void CalculateThroughput(Ptr<FlowMonitor> monitor, std::ofstream& outFile, Time interval) {
+void CalculateThroughput(Ptr<FlowMonitor> monitor, FlowMonitorHelper& flowmonHelper, std::ofstream& outFile, Time interval) {
     monitor->CheckForLostPackets();
     auto flowStats = monitor->GetFlowStats();
     std::cout << "CalculateThroughput called at time: " << Simulator::Now().GetSeconds() << "s, flows: " << flowStats.size() << std::endl;
+
+    // Map of flow ID to destination port for filtering
+    std::map<uint32_t, uint16_t> flowToPort;
     for (auto it = flowStats.begin(); it != flowStats.end(); ++it) {
-        double throughput = (it->second.rxBytes * 8.0) / (it->second.timeLastRxPacket.GetSeconds() - it->second.timeFirstTxPacket.GetSeconds()) / 1e6;
-        std::cout << "Flow " << it->first << ": rxBytes=" << it->second.rxBytes << ", timeLastRx=" << it->second.timeLastRxPacket.GetSeconds() 
-                  << ", timeFirstTx=" << it->second.timeFirstTxPacket.GetSeconds() << ", throughput=" << throughput << " Mbps" << std::endl;
-        outFile << Simulator::Now().GetSeconds() << " " << it->first << " " << throughput << std::endl;
+        FlowId flowId = it->first;
+        Ptr<FlowClassifier> classifier = flowmonHelper.GetClassifier();
+        Ipv4FlowClassifier::FiveTuple tuple = dynamic_cast<Ipv4FlowClassifier*>(&(*classifier))->FindFlow(flowId);
+        flowToPort[flowId] = tuple.destinationPort;
     }
-    Simulator::Schedule(interval, &CalculateThroughput, monitor, std::ref(outFile), interval);
+
+    for (auto it = flowStats.begin(); it != flowStats.end(); ++it) {
+        uint32_t flowId = it->first;
+        uint16_t dstPort = flowToPort[flowId];
+        // Only process flows with destination ports 7000 or 9000
+        if (dstPort != 7000 && dstPort != 9000) {
+            continue;
+        }
+        double throughput = (it->second.rxBytes * 8.0) / (it->second.timeLastRxPacket.GetSeconds() - it->second.timeFirstTxPacket.GetSeconds()) / 1e6;
+        std::cout << "Flow " << flowId << " (dstPort=" << dstPort << "): rxBytes=" << it->second.rxBytes 
+                  << ", timeLastRx=" << it->second.timeLastRxPacket.GetSeconds() 
+                  << ", timeFirstTx=" << it->second.timeFirstTxPacket.GetSeconds() 
+                  << ", throughput=" << throughput << " Mbps" << std::endl;
+        outFile << Simulator::Now().GetSeconds() << " " << flowId << " " << throughput << std::endl;
+    }
+    Simulator::Schedule(interval, &CalculateThroughput, monitor, std::ref(flowmonHelper), std::ref(outFile), interval);
 }
 
 int main(int argc, char* argv[]) {
@@ -79,45 +97,52 @@ int main(int argc, char* argv[]) {
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
     // Install applications
-    uint16_t portA = 5000;
-    uint16_t portB = 5001;
+    uint16_t portLow = 7000;  // Low priority
+    uint16_t portHigh = 9000; // High priority
 
-    // Application B (low priority, starts at t=1)
-    BulkSendHelper bulkB("ns3::TcpSocketFactory", InetSocketAddress(if12.GetAddress(1), portB));
-    bulkB.SetAttribute("MaxBytes", UintegerValue(0));
-    ApplicationContainer clientB = bulkB.Install(nodes.Get(0));
-    clientB.Start(Seconds(1.0)); // Delayed start
-    clientB.Stop(Seconds(30.0));
+    // Application Low Priority (port 7000, starts at t=1)
+    OnOffHelper onOffLow("ns3::UdpSocketFactory", InetSocketAddress(if12.GetAddress(1), portLow));
+    onOffLow.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
+    onOffLow.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+    onOffLow.SetAttribute("DataRate", StringValue("4Mbps")); // Send at a rate higher than link capacity to ensure saturation
+    onOffLow.SetAttribute("PacketSize", UintegerValue(1024));
+    ApplicationContainer clientLow = onOffLow.Install(nodes.Get(0));
+    clientLow.Start(Seconds(1.0));
+    clientLow.Stop(Seconds(30.0));
 
-    PacketSinkHelper sinkB("ns3::TcpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), portB));
-    ApplicationContainer serverB = sinkB.Install(nodes.Get(2));
-    serverB.Start(Seconds(0.0));
-    serverB.Stop(Seconds(30.0));
+    PacketSinkHelper sinkLow("ns3::UdpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), portLow));
+    ApplicationContainer serverLow = sinkLow.Install(nodes.Get(2));
+    serverLow.Start(Seconds(0.0));
+    serverLow.Stop(Seconds(30.0));
 
-    // Application A (high priority, starts at t=12)
-    BulkSendHelper bulkA("ns3::TcpSocketFactory", InetSocketAddress(if12.GetAddress(1), portA));
-    bulkA.SetAttribute("MaxBytes", UintegerValue(0));
-    ApplicationContainer clientA = bulkA.Install(nodes.Get(0));
-    clientA.Start(Seconds(12.0));
-    clientA.Stop(Seconds(24.0));
+    // Application High Priority (port 9000, starts at t=14, stops at t=17)
+    OnOffHelper onOffHigh("ns3::UdpSocketFactory", InetSocketAddress(if12.GetAddress(1), portHigh));
+    onOffHigh.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
+    onOffHigh.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+    onOffHigh.SetAttribute("DataRate", StringValue("4Mbps")); // Send at a rate higher than link capacity to ensure saturation
+    onOffHigh.SetAttribute("PacketSize", UintegerValue(1024));
+    ApplicationContainer clientHigh = onOffHigh.Install(nodes.Get(0));
+    clientHigh.Start(Seconds(14.0));
+    clientHigh.Stop(Seconds(17.0));
 
-    PacketSinkHelper sinkA("ns3::TcpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), portA));
-    ApplicationContainer serverA = sinkA.Install(nodes.Get(2));
-    serverA.Start(Seconds(0.0));
-    serverA.Stop(Seconds(30.0));
+    PacketSinkHelper sinkHigh("ns3::UdpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), portHigh));
+    ApplicationContainer serverHigh = sinkHigh.Install(nodes.Get(2));
+    serverHigh.Start(Seconds(0.0));
+    serverHigh.Stop(Seconds(30.0));
 
     // Trace packet transmissions and receptions
-    clientA.Get(0)->TraceConnectWithoutContext("Tx", MakeCallback(&PacketSentCallback));
-    clientB.Get(0)->TraceConnectWithoutContext("Tx", MakeCallback(&PacketSentCallback));
-    serverA.Get(0)->TraceConnectWithoutContext("Rx", MakeCallback(&PacketReceivedCallback));
-    serverB.Get(0)->TraceConnectWithoutContext("Rx", MakeCallback(&PacketReceivedCallback));
+    clientLow.Get(0)->TraceConnectWithoutContext("Tx", MakeCallback(&PacketSentCallback));
+    clientHigh.Get(0)->TraceConnectWithoutContext("Tx", MakeCallback(&PacketSentCallback));
+    serverLow.Get(0)->TraceConnectWithoutContext("Rx", MakeCallback(&PacketReceivedCallback));
+    serverHigh.Get(0)->TraceConnectWithoutContext("Rx", MakeCallback(&PacketReceivedCallback));
 
-    // Enable PCAP tracing on the router device
-    p2p.EnablePcap("spq-router", dev12.Get(0));
+    // Enable PCAP tracing
+    p2p.EnablePcap("prespq", dev01.Get(1)); // Packets entering the router (Host1 to Router)
+    p2p.EnablePcap("postspq", dev12.Get(0)); // Packets leaving the router (Router to Host2)
 
     // Install FlowMonitor
-    FlowMonitorHelper flowmon;
-    Ptr<FlowMonitor> monitor = flowmon.InstallAll();
+    FlowMonitorHelper flowmonHelper;
+    Ptr<FlowMonitor> monitor = flowmonHelper.InstallAll();
 
     // Open output file for throughput
     std::ofstream outFile("spq-throughput.txt");
@@ -125,7 +150,7 @@ int main(int argc, char* argv[]) {
         std::cerr << "Failed to open spq-throughput.txt" << std::endl;
         return 1;
     }
-    Simulator::Schedule(Seconds(1.0), &CalculateThroughput, monitor, std::ref(outFile), Seconds(1.0));
+    Simulator::Schedule(Seconds(1.0), &CalculateThroughput, monitor, std::ref(flowmonHelper), std::ref(outFile), Seconds(1.0));
 
     // Run simulation
     Simulator::Stop(Seconds(30.0));

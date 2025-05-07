@@ -1,5 +1,6 @@
 #include "spq.h"
 #include "ns3/string.h"
+#include "ns3/simulator.h" // Added to use Simulator::Now()
 #include <fstream>
 #include <sstream>
 
@@ -21,48 +22,90 @@ SPQ::SPQ() {
 SPQ::~SPQ() {
     // No manual cleanup needed; Ptr<TrafficClass> handles memory management
 }
-
+/**
 std::pair<uint32_t, Ptr<const Packet>> SPQ::Schedule(void) {
-    // Keep trying until a packet is scheduled or all queues are empty
-    while (true) {
-        uint32_t highestPriority = 0;
-        int selectedQueue = -1;
+    // Find the highest priority queue with packets
+    uint32_t highestPriority = 0;
+    int selectedQueue = -1;
 
-        for (uint32_t i = 0; i < q_class.size(); ++i) {
-            if (!q_class[i]->IsEmpty() && q_class[i]->GetPriorityLevel() >= highestPriority) {
-                highestPriority = q_class[i]->GetPriorityLevel();
-                selectedQueue = i;
-            }
-        }
-
-        if (selectedQueue >= 0) {
-            Ptr<TrafficClass> queue = q_class[selectedQueue];
-            Ptr<Packet> packet = queue->Dequeue();
-            if (packet) {
-                std::cout << "SPQ::Schedule: Scheduled packet from queue " << selectedQueue 
-                          << ", priority=" << highestPriority << ", size=" << packet->GetSize() << std::endl;
-                return {static_cast<uint32_t>(selectedQueue), packet};
-            } else {
-                std::cout << "SPQ::Schedule: Dequeue failed for queue " << selectedQueue << std::endl;
-            }
-        } else {
-            // All queues are empty, safe to return nullptr
-            std::cout << "SPQ::Schedule: No packet scheduled (all queues empty)" << std::endl;
-            break;
+    for (uint32_t i = 0; i < q_class.size(); ++i) {
+        if (!q_class[i]->IsEmpty() && q_class[i]->GetPriorityLevel() > highestPriority) {
+            highestPriority = q_class[i]->GetPriorityLevel();
+            selectedQueue = i;
         }
     }
+
+    if (selectedQueue >= 0) {
+        Ptr<TrafficClass> queue = q_class[selectedQueue];
+        Ptr<const Packet> peekedPacket = queue->Peek();
+        if (peekedPacket) {
+            std::cout << "SPQ::Schedule: Scheduled packet from queue " << selectedQueue 
+                      << ", priority=" << highestPriority << ", size=" << peekedPacket->GetSize() 
+                      << ", time=" << Simulator::Now().GetSeconds() << "s" << std::endl;
+            return {static_cast<uint32_t>(selectedQueue), peekedPacket};
+        } else {
+            std::cout << "SPQ::Schedule: Peek failed for queue " << selectedQueue << std::endl;
+        }
+    }
+
+    // If no high-priority queue has packets, check lower-priority queues
+    for (uint32_t i = 0; i < q_class.size(); ++i) {
+        if (!q_class[i]->IsEmpty()) {
+            Ptr<TrafficClass> queue = q_class[i];
+            Ptr<const Packet> peekedPacket = queue->Peek();
+            if (peekedPacket) {
+                std::cout << "SPQ::Schedule: Scheduled packet from queue " << i 
+                          << ", priority=" << queue->GetPriorityLevel() << ", size=" << peekedPacket->GetSize() 
+                          << ", time=" << Simulator::Now().GetSeconds() << "s" << std::endl;
+                return {i, peekedPacket};
+            } else {
+                std::cout << "SPQ::Schedule: Peek failed for queue " << i << std::endl;
+            }
+        }
+    }
+
+    std::cout << "SPQ::Schedule: No packet scheduled (all queues empty)" << std::endl;
+    return {q_class.size(), nullptr};
+}*/
+
+std::pair<uint32_t, Ptr<const Packet>> SPQ::Schedule(void) {
+    int selectedQueue = -1;
+    int maxPriority = -1;
+
+    for (uint32_t i = 0; i < q_class.size(); ++i) {
+        int priority = q_class[i]->GetPriorityLevel();
+        if (!q_class[i]->IsEmpty() && priority > maxPriority) {
+            maxPriority = priority;
+            selectedQueue = i;
+        }
+    }
+
+    if (selectedQueue >= 0) {
+        Ptr<const Packet> peekedPacket = q_class[selectedQueue]->Peek();
+        if (peekedPacket) {
+            std::cout << "SPQ::Schedule: Scheduled packet from queue " << selectedQueue 
+                      << ", priority=" << maxPriority << ", size=" << peekedPacket->GetSize() 
+                      << ", time=" << Simulator::Now().GetSeconds() << "s" << std::endl;
+            return {static_cast<uint32_t>(selectedQueue), peekedPacket};
+        }
+    }
+
+    std::cout << "SPQ::Schedule: No packet scheduled (all queues empty)" << std::endl;
     return {q_class.size(), nullptr};
 }
+
 
 uint32_t SPQ::Classify(Ptr<Packet> p) {
     for (uint32_t i = 0; i < q_class.size(); ++i) {
         if (q_class[i]->match(p)) {
-            std::cout << "SPQ::Classify: Packet matched queue " << i << std::endl;
+            std::cout << "SPQ::Classify: Packet matched queue " << i << " at time " 
+                      << Simulator::Now().GetSeconds() << "s" << std::endl;
             return i;
         }
     }
     // Drop packets that don't match any queue (no default queue usage)
-    std::cout << "SPQ::Classify: Packet dropped (no matching queue)" << std::endl;
+    std::cout << "SPQ::Classify: Packet dropped (no matching queue) at time " 
+              << Simulator::Now().GetSeconds() << "s" << std::endl;
     return q_class.size(); // No match, return invalid index to drop the packet
 }
 
@@ -112,7 +155,8 @@ void SPQ::ParseConfigLine(const std::string& line) {
             } else if (filterType == "src_port") {
                 filter->AddElement(new SrcPortNumber(std::stoi(value)));
             } else if (filterType == "dst_port") {
-                filter->AddElement(new DstPortNumber(std::stoi(value))); // Updated to handle dst_port
+                filter->AddElement(new DstPortNumber(std::stoi(value)));
+                std::cout << "SPQ::ParseConfigLine: Added filter for dst_port=" << value << " to queue " << queueId << std::endl;
             } else if (filterType == "protocol") {
                 filter->AddElement(new ProtocolNumber(std::stoi(value)));
             }
