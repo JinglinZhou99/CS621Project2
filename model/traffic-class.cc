@@ -1,6 +1,5 @@
 #include "traffic-class.h"
 #include "ns3/packet.h"
-#include <iostream>
 
 namespace ns3 {
 
@@ -14,22 +13,37 @@ TypeId TrafficClass::GetTypeId(void) {
     return tid;
 }
 
-TrafficClass::TrafficClass() : packets(0), maxPackets(0), weight(0.0), priority_level(0), isDefault(false) {
+TrafficClass::TrafficClass()
+    : packets(0), maxPackets(1000), weight(0), priority_level(0), isDefault(false) {
 }
 
 TrafficClass::~TrafficClass() {
     // Clean up filters
     for (Filter* filter : filters) {
-        for (FilterElement* element : filter->elements) {
-            delete element;
-        }
         delete filter;
     }
+    filters.clear();
+}
+
+bool TrafficClass::match(Ptr<Packet> p) {
+    if (filters.empty()) {
+        std::cout << "TrafficClass::match: No filters, packet accepted" << std::endl;
+        return true;
+    }
+
+    for (Filter* filter : filters) {
+        if (filter->match(p)) {
+            std::cout << "TrafficClass::match: Packet accepted by filter" << std::endl;
+            return true;
+        }
+    }
+    std::cout << "TrafficClass::match: Packet rejected by filter" << std::endl;
+    return false;
 }
 
 bool TrafficClass::Enqueue(Ptr<Packet> p) {
     if (packets >= maxPackets) {
-        std::cout << "TrafficClass::Enqueue: Packet dropped (queue full, maxPackets=" << maxPackets << ")" << std::endl;
+        std::cout << "TrafficClass::Enqueue: Queue full, packet dropped" << std::endl;
         return false;
     }
     m_queue.push(p);
@@ -72,60 +86,32 @@ Ptr<const Packet> TrafficClass::Peek() {
     return p;
 }
 
-bool TrafficClass::match(Ptr<Packet> p) {
-    if (filters.empty()) {
-        std::cout << "TrafficClass::match: No filters, packet accepted" << std::endl;
-        return true;
-    }
-    for (Filter* filter : filters) {
-        if (!filter->match(p)) {
-            std::cout << "TrafficClass::match: Packet rejected by filter" << std::endl;
-            return false;
-        }
-    }
-    std::cout << "TrafficClass::match: Packet accepted by all filters" << std::endl;
-    return true;
-}
-
 bool TrafficClass::IsEmpty() {
     bool empty = m_queue.empty();
-    if (empty != (packets == 0)) {
-        std::cerr << "TrafficClass::IsEmpty: Inconsistency detected: m_queue.empty()=" << empty 
-                  << ", packets=" << packets << std::endl;
-    }
+    std::cout << "TrafficClass::IsEmpty: Queue " << (empty ? "is empty" : "is not empty") << std::endl;
     return empty;
 }
 
-uint32_t TrafficClass::GetSize() {
-    uint32_t size = m_queue.size();
-    if (size != packets) {
-        std::cerr << "TrafficClass::GetSize: Inconsistency detected: m_queue.size()=" << size 
-                  << ", packets=" << packets << std::endl;
-    }
-    return size;
-}
-
-void TrafficClass::AddFilter(Filter* filter) {
-    filters.push_back(filter);
-    std::cout << "TrafficClass::AddFilter: Added filter, total filters=" << filters.size() << std::endl;
-}
-
-void TrafficClass::SetMaxPackets(uint32_t max) {
-    maxPackets = max;
+void TrafficClass::SetMaxPackets(uint32_t mp) {
+    maxPackets = mp;
     std::cout << "TrafficClass::SetMaxPackets: Set maxPackets=" << maxPackets << std::endl;
 }
 
-void TrafficClass::SetWeight(double w) {
+uint32_t TrafficClass::GetMaxPackets() {
+    return maxPackets;
+}
+
+void TrafficClass::SetWeight(uint32_t w) {
     weight = w;
     std::cout << "TrafficClass::SetWeight: Set weight=" << weight << std::endl;
 }
 
-double TrafficClass::GetWeight() {
+uint32_t TrafficClass::GetWeight() {
     return weight;
 }
 
-void TrafficClass::SetPriorityLevel(uint32_t level) {
-    priority_level = level;
+void TrafficClass::SetPriorityLevel(uint32_t pl) {
+    priority_level = pl;
     std::cout << "TrafficClass::SetPriorityLevel: Set priority_level=" << priority_level << std::endl;
 }
 
@@ -133,13 +119,18 @@ uint32_t TrafficClass::GetPriorityLevel() {
     return priority_level;
 }
 
-void TrafficClass::SetDefault(bool default_queue) {
-    isDefault = default_queue;
+void TrafficClass::SetDefault(bool d) {
+    isDefault = d;
     std::cout << "TrafficClass::SetDefault: Set isDefault=" << (isDefault ? "true" : "false") << std::endl;
 }
 
 bool TrafficClass::GetDefault() {
     return isDefault;
+}
+
+void TrafficClass::AddFilter(Filter* f) {
+    filters.push_back(f);
+    std::cout << "TrafficClass::AddFilter: Added filter, total filters=" << filters.size() << std::endl;
 }
 
 } // namespace ns3

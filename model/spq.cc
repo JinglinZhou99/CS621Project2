@@ -23,7 +23,7 @@ SPQ::~SPQ() {
 }
 
 std::pair<uint32_t, Ptr<const Packet>> SPQ::Schedule(void) {
-    // Keep trying until a packet is scheduled or all queues remain empty
+    // Keep trying until a packet is scheduled or all queues are empty
     while (true) {
         uint32_t highestPriority = 0;
         int selectedQueue = -1;
@@ -61,15 +61,9 @@ uint32_t SPQ::Classify(Ptr<Packet> p) {
             return i;
         }
     }
-    // Look for a default queue
-    for (uint32_t i = 0; i < q_class.size(); ++i) {
-        if (q_class[i]->GetDefault()) {
-            std::cout << "SPQ::Classify: Packet assigned to default queue " << i << std::endl;
-            return i;
-        }
-    }
-    std::cout << "SPQ::Classify: Packet dropped (no default queue)" << std::endl;
-    return q_class.size(); // No match, return invalid index
+    // Drop packets that don't match any queue (no default queue usage)
+    std::cout << "SPQ::Classify: Packet dropped (no matching queue)" << std::endl;
+    return q_class.size(); // No match, return invalid index to drop the packet
 }
 
 bool SPQ::ReadConfigFile(std::string filename) {
@@ -86,23 +80,7 @@ bool SPQ::ReadConfigFile(std::string filename) {
     }
     file.close();
 
-    // Add a default queue for unmatched packets if none exists
-    bool hasDefault = false;
-    for (Ptr<TrafficClass> tc : q_class) {
-        if (tc->GetDefault()) {
-            hasDefault = true;
-            break;
-        }
-    }
-    if (!hasDefault) {
-        Ptr<TrafficClass> defaultQueue = CreateObject<TrafficClass>();
-        defaultQueue->SetDefault(true);
-        defaultQueue->SetPriorityLevel(0); // Lowest priority
-        defaultQueue->SetMaxPackets(1000);
-        AddQueue(defaultQueue);
-        std::cout << "SPQ::ReadConfigFile: Added default queue for unmatched packets" << std::endl;
-    }
-
+    // Remove the default queue addition
     std::cout << "SPQ::ReadConfigFile: Configured " << q_class.size() << " queues" << std::endl;
     return true;
 }
@@ -134,7 +112,7 @@ void SPQ::ParseConfigLine(const std::string& line) {
             } else if (filterType == "src_port") {
                 filter->AddElement(new SrcPortNumber(std::stoi(value)));
             } else if (filterType == "dst_port") {
-                filter->AddElement(new DstPortNumber(std::stoi(value)));
+                filter->AddElement(new DstPortNumber(std::stoi(value))); // Updated to handle dst_port
             } else if (filterType == "protocol") {
                 filter->AddElement(new ProtocolNumber(std::stoi(value)));
             }

@@ -13,7 +13,7 @@ void PacketSentCallback(Ptr<const Packet> packet) {
     std::cout << "Packet sent at time " << Simulator::Now().GetSeconds() << "s, size=" << packet->GetSize() << " bytes" << std::endl;
 }
 
-void PacketReceivedCallback(Ptr<const Packet> packet, const Address &address) { // Updated to include Address
+void PacketReceivedCallback(Ptr<const Packet> packet, const Address &address) {
     std::cout << "Packet received at time " << Simulator::Now().GetSeconds() << "s, size=" << packet->GetSize() 
               << " bytes, from address " << address << std::endl;
 }
@@ -82,11 +82,11 @@ int main(int argc, char* argv[]) {
     uint16_t portA = 5000;
     uint16_t portB = 5001;
 
-    // Application B (low priority, starts at t=0)
+    // Application B (low priority, starts at t=1)
     BulkSendHelper bulkB("ns3::TcpSocketFactory", InetSocketAddress(if12.GetAddress(1), portB));
     bulkB.SetAttribute("MaxBytes", UintegerValue(0));
     ApplicationContainer clientB = bulkB.Install(nodes.Get(0));
-    clientB.Start(Seconds(0.0));
+    clientB.Start(Seconds(1.0)); // Delayed start
     clientB.Stop(Seconds(30.0));
 
     PacketSinkHelper sinkB("ns3::TcpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), portB));

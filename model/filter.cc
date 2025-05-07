@@ -1,30 +1,34 @@
 #include "filter.h"
+#include "filter-element.h"
 #include "ns3/packet.h"
 
 namespace ns3 {
 
-Filter::Filter() {}
+Filter::Filter() {
+    // Default constructor, initializes an empty vector of elements
+}
 
 Filter::~Filter() {
     // Clean up elements
-    for (FilterElement* elem : elements) {
-        delete elem;
+    for (FilterElement* element : elements) {
+        delete element;
     }
+    elements.clear();
 }
 
 bool Filter::match(Ptr<Packet> p) {
-    for (size_t i = 0; i < elements.size(); ++i) {
-        if (!elements[i]->match(p)) {
-            std::cout << "Filter::match: Packet rejected by element " << i << std::endl;
+    for (FilterElement* element : elements) {
+        if (!element->match(p)) {
+            std::cout << "Filter::match: Packet rejected by element " << (&element - &elements[0]) << std::endl;
             return false;
         }
     }
-    std::cout << "Filter::match: Packet accepted by all " << elements.size() << " elements" << std::endl;
+    std::cout << "Filter::match: Packet accepted" << std::endl;
     return true;
 }
 
-void Filter::AddElement(FilterElement* elem) {
-    elements.push_back(elem);
+void Filter::AddElement(FilterElement* e) {
+    elements.push_back(e);
     std::cout << "Filter::AddElement: Added element, total elements=" << elements.size() << std::endl;
 }
 

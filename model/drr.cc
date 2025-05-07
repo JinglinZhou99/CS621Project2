@@ -83,15 +83,9 @@ uint32_t DRR::Classify(Ptr<Packet> p) {
             return i;
         }
     }
-    // Look for a default queue
-    for (uint32_t i = 0; i < q_class.size(); ++i) {
-        if (q_class[i]->GetDefault()) {
-            std::cout << "DRR::Classify: Packet assigned to default queue " << i << std::endl;
-            return i;
-        }
-    }
-    std::cout << "DRR::Classify: Packet dropped (no default queue)" << std::endl;
-    return q_class.size(); // No match, return invalid index
+    // Drop packets that don't match any queue (no default queue usage)
+    std::cout << "DRR::Classify: Packet dropped (no matching queue)" << std::endl;
+    return q_class.size(); // No match, return invalid index to drop the packet
 }
 
 bool DRR::ReadConfigFile(std::string filename) {
@@ -108,23 +102,7 @@ bool DRR::ReadConfigFile(std::string filename) {
     }
     file.close();
 
-    // Add a default queue for unmatched packets if none exists
-    bool hasDefault = false;
-    for (Ptr<TrafficClass> tc : q_class) {
-        if (tc->GetDefault()) {
-            hasDefault = true;
-            break;
-        }
-    }
-    if (!hasDefault) {
-        Ptr<TrafficClass> defaultQueue = CreateObject<TrafficClass>();
-        defaultQueue->SetDefault(true);
-        defaultQueue->SetWeight(1000); // Default quantum
-        defaultQueue->SetMaxPackets(1000);
-        AddQueue(defaultQueue);
-        std::cout << "DRR::ReadConfigFile: Added default queue for unmatched packets" << std::endl;
-    }
-
+    // Remove the default queue addition
     deficits.resize(q_class.size(), 0); // Initialize deficits
     std::cout << "DRR::ReadConfigFile: Configured " << q_class.size() << " queues" << std::endl;
     return true;
@@ -157,7 +135,7 @@ void DRR::ParseConfigLine(const std::string& line) {
             } else if (filterType == "src_port") {
                 filter->AddElement(new SrcPortNumber(std::stoi(value)));
             } else if (filterType == "dst_port") {
-                filter->AddElement(new DstPortNumber(std::stoi(value)));
+                filter->AddElement(new DstPortNumber(std::stoi(value))); // Updated to handle dst_port
             } else if (filterType == "protocol") {
                 filter->AddElement(new ProtocolNumber(std::stoi(value)));
             }
