@@ -12,15 +12,15 @@ build_lib(
         model/traffic-class.cc
         model/filter.cc
         model/filter-element.cc
-        model/spq.cc
-        model/drr.cc
+        model/schedulers/spq.cc
+        model/schedulers/drr.cc
     HEADER_FILES
         model/diffserv.h
         model/traffic-class.h
         model/filter.h
         model/filter-element.h
-        model/spq.h
-        model/drr.h
+        model/schedulers/spq.h
+        model/schedulers/drr.h
     LIBRARIES_TO_LINK
         ${libcore}
         ${libnetwork}
@@ -31,11 +31,12 @@ build_lib(
 )
 target_include_directories(CS621Project2 PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/model>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/model/schedulers>
 )
 
 build_exec(
     EXECNAME spq-simulation
-    SOURCE_FILES model/spq-simulation.cc
+    SOURCE_FILES model/simulation/spq-simulation.cc
     LIBRARIES_TO_LINK
         CS621Project2
         ${libcore}
@@ -50,7 +51,7 @@ build_exec(
 
 build_exec(
     EXECNAME drr-simulation
-    SOURCE_FILES model/drr-simulation.cc
+    SOURCE_FILES model/simulation/drr-simulation.cc
     LIBRARIES_TO_LINK
         CS621Project2
         ${libcore}
