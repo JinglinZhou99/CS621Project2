@@ -8,6 +8,14 @@ namespace ns3 {
 
 NS_OBJECT_ENSURE_REGISTERED(SPQ);
 
+/**
+ * @brief Returns the TypeId for SPQ.
+ *
+ * Registers the SPQ class with the ns-3 object system, setting it as a child of DiffServ
+ * and assigning it to the "Network" group.
+ *
+ * @return The TypeId of the SPQ class.
+ */
 TypeId SPQ::GetTypeId(void) {
     static TypeId tid = TypeId("ns3::SPQ")
         .SetParent<DiffServ>()
@@ -22,6 +30,15 @@ SPQ::SPQ() {
 SPQ::~SPQ() {
 }
 
+/**
+ * @brief Schedules a packet for dequeuing using the Strict Priority Queue algorithm.
+ *
+ * Selects the non-empty queue with the highest priority level and returns its peeked packet.
+ * Logs the scheduling decision, including queue index, priority, packet size, and simulation time.
+ *
+ * @return A pair containing the index of the scheduled queue and a pointer to the peeked packet,
+ *         or {q_class.size(), nullptr} if no packet is scheduled.
+ */
 std::pair<uint32_t, Ptr<const Packet>> SPQ::Schedule(void) {
     int selectedQueue = -1;
     int maxPriority = -1;
@@ -48,7 +65,15 @@ std::pair<uint32_t, Ptr<const Packet>> SPQ::Schedule(void) {
     return {q_class.size(), nullptr};
 }
 
-
+/**
+ * @brief Classifies a packet to determine the appropriate queue.
+ *
+ * Iterates through the traffic class queues and returns the index of the first queue
+ * whose filter matches the packet. Logs the classification result and simulation time.
+ *
+ * @param p Pointer to the packet to be classified.
+ * @return The index of the matching queue, or q_class.size() if no queue matches.
+ */
 uint32_t SPQ::Classify(Ptr<Packet> p) {
     for (uint32_t i = 0; i < q_class.size(); ++i) {
         if (q_class[i]->match(p)) {
@@ -80,6 +105,14 @@ bool SPQ::ReadConfigFile(std::string filename) {
     return true;
 }
 
+/**
+ * @brief Parses a single line from the configuration file.
+ *
+ * Interprets the line to configure a queue (with priority and max packets) or a filter
+ * (e.g., source/destination IP, port, or protocol) for a specific queue. Logs the parsing result.
+ *
+ * @param line The configuration line to parse.
+ */
 void SPQ::ParseConfigLine(const std::string& line) {
     std::istringstream iss(line);
     std::string token;

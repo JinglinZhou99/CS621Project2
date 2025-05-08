@@ -9,6 +9,15 @@ namespace ns3 {
 
 SrcIPAddress::SrcIPAddress(Ipv4Address addr) : default_address(addr) {}
 
+/**
+ * @brief Checks if the packet's source IP address matches the filter's address.
+ *
+ * Removes the PPP header, peeks at the IPv4 header, and compares the packet's source IP address
+ * with the stored address. Logs the matching result.
+ *
+ * @param p Pointer to the packet to be evaluated.
+ * @return True if the packet's source IP address matches, false otherwise.
+ */
 bool SrcIPAddress::match(Ptr<Packet> p) const {
     Ptr<Packet> p_copy = p->Copy();
     PppHeader pppHeader;
@@ -23,6 +32,15 @@ bool SrcIPAddress::match(Ptr<Packet> p) const {
 
 SrcMask::SrcMask(Ipv4Address addr, Ipv4Mask mask) : default_address(addr), default_mask(mask) {}
 
+/**
+ * @brief Checks if the packet's source IP address matches the filter's address and mask.
+ *
+ * Removes the PPP header, peeks at the IPv4 header, applies the mask to the packet's source IP
+ * address, and compares it with the stored address. Logs the matching result.
+ *
+ * @param p Pointer to the packet to be evaluated.
+ * @return True if the packet's source IP address matches, false otherwise.
+ */
 bool SrcMask::match(Ptr<Packet> p) const {
     Ptr<Packet> p_copy = p->Copy();
     PppHeader pppHeader;
@@ -38,6 +56,15 @@ bool SrcMask::match(Ptr<Packet> p) const {
 
 SrcPortNumber::SrcPortNumber(uint32_t port) : default_port(port) {}
 
+/**
+ * @brief Checks if the packet's source port number matches the filter's port.
+ *
+ * Removes the PPP and IPv4 headers, checks the protocol (UDP or TCP), and compares the packet's
+ * source port number with the stored port. Logs the matching result.
+ *
+ * @param p Pointer to the packet to be evaluated.
+ * @return True if the packet's source port number matches, false otherwise.
+ */
 bool SrcPortNumber::match(Ptr<Packet> p) const {
     Ptr<Packet> p_copy = p->Copy();
     PppHeader pppHeader;
@@ -66,6 +93,15 @@ bool SrcPortNumber::match(Ptr<Packet> p) const {
 
 DstIPAddress::DstIPAddress(Ipv4Address addr) : default_address(addr) {}
 
+/**
+ * @brief Checks if the packet's destination IP address matches the filter's address.
+ *
+ * Removes the PPP header, peeks at the IPv4 header, and compares the packet's destination IP
+ * address with the stored address. Logs the matching result.
+ *
+ * @param p Pointer to the packet to be evaluated.
+ * @return True if the packet's destination IP address matches, false otherwise.
+ */
 bool DstIPAddress::match(Ptr<Packet> p) const {
     Ptr<Packet> p_copy = p->Copy();
     PppHeader pppHeader;
@@ -80,6 +116,15 @@ bool DstIPAddress::match(Ptr<Packet> p) const {
 
 DstMask::DstMask(Ipv4Address addr, Ipv4Mask mask) : default_address(addr), default_mask(mask) {}
 
+/**
+ * @brief Checks if the packet's destination IP address matches the filter's address and mask.
+ *
+ * Removes the PPP header, peeks at the IPv4 header, applies the mask to the packet's destination
+ * IP address, and compares it with the stored address. Logs the matching result.
+ *
+ * @param p Pointer to the packet to be evaluated.
+ * @return True if the packet's destination IP address matches, false otherwise.
+ */
 bool DstMask::match(Ptr<Packet> p) const {
     Ptr<Packet> p_copy = p->Copy();
     PppHeader pppHeader;
@@ -95,6 +140,15 @@ bool DstMask::match(Ptr<Packet> p) const {
 
 DstPortNumber::DstPortNumber(uint32_t port) : default_port(port) {}
 
+/**
+ * @brief Checks if the packet's destination port number matches the filter's port.
+ *
+ * Removes the PPP and IPv4 headers, checks the protocol (UDP or TCP), and compares the packet's
+ * destination port number with the stored port. Logs the matching result.
+ *
+ * @param p Pointer to the packet to be evaluated.
+ * @return True if the packet's destination port number matches, false otherwise.
+ */
 bool DstPortNumber::match(Ptr<Packet> p) const {
     Ptr<Packet> p_copy = p->Copy();
     PppHeader pppHeader;
@@ -123,6 +177,15 @@ bool DstPortNumber::match(Ptr<Packet> p) const {
 
 ProtocolNumber::ProtocolNumber(uint32_t protocol) : default_protocol(protocol) {}
 
+/**
+ * @brief Checks if the packet's protocol number matches the filter's protocol.
+ *
+ * Removes the PPP header, peeks at the IPv4 header, and compares the packet's protocol number
+ * with the stored protocol. Logs the matching result.
+ *
+ * @param p Pointer to the packet to be evaluated.
+ * @return True if the packet's protocol number matches, false otherwise.
+ */
 bool ProtocolNumber::match(Ptr<Packet> p) const {
     Ptr<Packet> p_copy = p->Copy();
     PppHeader pppHeader;

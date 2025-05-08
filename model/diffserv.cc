@@ -9,6 +9,15 @@ bool DiffServ::Enqueue(Ptr<Packet> p) {
     return DoEnqueue(p);
 }
 
+/**
+ * @brief Performs the actual enqueuing of a packet.
+ *
+ * Classifies the packet to determine the target queue and enqueues it.
+ * Logs the outcome of the operation.
+ *
+ * @param p Pointer to the packet to be enqueued.
+ * @return True if the packet was successfully enqueued, false if no matching queue is found or enqueuing fails.
+ */
 bool DiffServ::DoEnqueue(Ptr<Packet> p) {
     uint32_t queue_index = Classify(p);
     if (queue_index >= q_class.size()) {
@@ -25,6 +34,14 @@ Ptr<Packet> DiffServ::Dequeue() {
     return DoDequeue();
 }
 
+/**
+ * @brief Performs the actual dequeuing of a packet.
+ *
+ * Uses the scheduling mechanism to select a queue and dequeues a packet from it.
+ * Logs the outcome of the operation.
+ *
+ * @return Pointer to the dequeued packet, or nullptr if no packet is available or dequeuing fails.
+ */
 Ptr<Packet> DiffServ::DoDequeue() {
     auto [index, dpacket] = Schedule();
     if (dpacket && index < q_class.size()) {
@@ -66,6 +83,13 @@ Ptr<const Packet> DiffServ::Peek() const {
     return nullptr;
 }
 
+/**
+ * @brief Adds a traffic class queue to the DiffServ system.
+ *
+ * Appends the provided traffic class to the list of queues and logs the updated queue count.
+ *
+ * @param trafficClass Pointer to the traffic class to be added.
+ */
 void DiffServ::AddQueue(Ptr<TrafficClass> trafficClass) {
     q_class.push_back(trafficClass);
     std::cout << "DiffServ::AddQueue: Added queue, total queues=" << q_class.size() << std::endl;

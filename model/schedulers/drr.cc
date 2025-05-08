@@ -8,6 +8,14 @@ namespace ns3 {
 
 NS_OBJECT_ENSURE_REGISTERED(DRR);
 
+/**
+ * @brief Returns the TypeId for DRR.
+ *
+ * Registers the DRR class with the ns-3 object system, setting it as a child of DiffServ
+ * and assigning it to the "Network" group.
+ *
+ * @return The TypeId of the DRR class.
+ */
 TypeId DRR::GetTypeId(void) {
     static TypeId tid = TypeId("ns3::DRR")
         .SetParent<DiffServ>()
@@ -22,6 +30,16 @@ DRR::DRR() : currentQueue(0) {
 DRR::~DRR() {
 }
 
+/**
+ * @brief Schedules a packet for dequeuing using the Deficit Round Robin algorithm.
+ *
+ * Iterates through the queues in a round-robin fashion, adding each queue's weight to its deficit
+ * counter. Selects a packet from a queue if its deficit is sufficient to cover the packet's size.
+ * Updates the deficit and logs the scheduling decision.
+ *
+ * @return A pair containing the index of the scheduled queue and a pointer to the peeked packet,
+ *         or {q_class.size(), nullptr} if no packet is scheduled.
+ */
 std::pair<uint32_t, Ptr<const Packet>> DRR::Schedule(void) {
     if (q_class.empty()) {
         std::cout << "DRR::Schedule: No queues available" << std::endl;
@@ -82,6 +100,15 @@ std::pair<uint32_t, Ptr<const Packet>> DRR::Schedule(void) {
     return {q_class.size(), nullptr};
 }
 
+/**
+ * @brief Classifies a packet to determine the appropriate queue.
+ *
+ * Iterates through the traffic class queues and returns the index of the first queue
+ * whose filter matches the packet. Logs the classification result.
+ *
+ * @param p Pointer to the packet to be classified.
+ * @return The index of the matching queue, or q_class.size() if no queue matches.
+ */
 uint32_t DRR::Classify(Ptr<Packet> p) {
     for (uint32_t i = 0; i < q_class.size(); ++i) {
         if (q_class[i]->match(p)) {
@@ -112,6 +139,14 @@ bool DRR::ReadConfigFile(std::string filename) {
     return true;
 }
 
+/**
+ * @brief Parses a single line from the configuration file.
+ *
+ * Interprets the line to configure a queue (with weight and max packets) or a filter
+ * (e.g., source/destination IP, port, or protocol) for a specific queue. Logs the parsing result.
+ *
+ * @param line The configuration line to parse.
+ */
 void DRR::ParseConfigLine(const std::string& line) {
     std::istringstream iss(line);
     std::string token;

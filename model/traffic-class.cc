@@ -5,6 +5,13 @@ namespace ns3 {
 
 NS_OBJECT_ENSURE_REGISTERED(TrafficClass);
 
+/**
+ * @brief Returns the TypeId for TrafficClass.
+ *
+ * Registers the TrafficClass with the ns-3 object system and sets its parent and group.
+ *
+ * @return The TypeId of the TrafficClass.
+ */
 TypeId TrafficClass::GetTypeId(void) {
     static TypeId tid = TypeId("ns3::TrafficClass")
         .SetParent<Object>()
@@ -17,14 +24,27 @@ TrafficClass::TrafficClass()
     : packets(0), maxPackets(1000), weight(0), priority_level(0), isDefault(false) {
 }
 
+/**
+ * @brief Destructor for TrafficClass.
+ *
+ * Frees memory allocated for all filters and clears the filters vector.
+ */
 TrafficClass::~TrafficClass() {
-    // Clean up filters
     for (Filter* filter : filters) {
         delete filter;
     }
     filters.clear();
 }
 
+/**
+ * @brief Checks if a packet matches any filter in the traffic class.
+ *
+ * If no filters are present, the packet is accepted. Otherwise, the packet is evaluated
+ * against each filter, and accepted if any filter matches. Logs the outcome.
+ *
+ * @param p Pointer to the packet to be evaluated.
+ * @return True if the packet matches any filter or no filters exist, false otherwise.
+ */
 bool TrafficClass::match(Ptr<Packet> p) {
     if (filters.empty()) {
         std::cout << "TrafficClass::match: No filters, packet accepted" << std::endl;
@@ -41,6 +61,15 @@ bool TrafficClass::match(Ptr<Packet> p) {
     return false;
 }
 
+/**
+ * @brief Enqueues a packet into the traffic class queue.
+ *
+ * Checks if the queue has reached its maximum capacity. If not, enqueues the packet
+ * and increments the packet count. Logs the outcome.
+ *
+ * @param p Pointer to the packet to be enqueued.
+ * @return True if the packet was successfully enqueued, false if the queue is full.
+ */
 bool TrafficClass::Enqueue(Ptr<Packet> p) {
     if (packets >= maxPackets) {
         std::cout << "TrafficClass::Enqueue: Queue full, packet dropped" << std::endl;
@@ -52,6 +81,14 @@ bool TrafficClass::Enqueue(Ptr<Packet> p) {
     return true;
 }
 
+/**
+ * @brief Dequeues a packet from the traffic class queue.
+ *
+ * Removes and returns the front packet from the queue, if available, and decrements
+ * the packet count. Logs the outcome.
+ *
+ * @return Pointer to the dequeued packet, or nullptr if the queue is empty.
+ */
 Ptr<Packet> TrafficClass::Dequeue() {
     if (m_queue.empty()) {
         std::cout << "TrafficClass::Dequeue: Queue empty" << std::endl;
@@ -92,6 +129,13 @@ bool TrafficClass::IsEmpty() {
     return empty;
 }
 
+/**
+ * @brief Sets the maximum number of packets the queue can hold.
+ *
+ * Updates the maximum packet capacity and logs the new value.
+ *
+ * @param mp The maximum number of packets.
+ */
 void TrafficClass::SetMaxPackets(uint32_t mp) {
     maxPackets = mp;
     std::cout << "TrafficClass::SetMaxPackets: Set maxPackets=" << maxPackets << std::endl;
@@ -101,6 +145,13 @@ uint32_t TrafficClass::GetMaxPackets() {
     return maxPackets;
 }
 
+/**
+ * @brief Sets the weight of the traffic class.
+ *
+ * Updates the weight value used for scheduling and logs the new value.
+ *
+ * @param w The weight value.
+ */
 void TrafficClass::SetWeight(uint32_t w) {
     weight = w;
     std::cout << "TrafficClass::SetWeight: Set weight=" << weight << std::endl;
@@ -128,6 +179,13 @@ bool TrafficClass::GetDefault() {
     return isDefault;
 }
 
+/**
+ * @brief Adds a filter to the traffic class.
+ *
+ * Appends the provided filter to the list of filters and logs the updated filter count.
+ *
+ * @param f Pointer to the filter to be added.
+ */
 void TrafficClass::AddFilter(Filter* f) {
     filters.push_back(f);
     std::cout << "TrafficClass::AddFilter: Added filter, total filters=" << filters.size() << std::endl;
