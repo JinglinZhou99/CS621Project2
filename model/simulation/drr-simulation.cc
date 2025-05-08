@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
     PacketSinkHelper sink1("ns3::UdpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), port1));
     ApplicationContainer server1 = sink1.Install(nodes.Get(2));
     server1.Start(Seconds(0.0));
-    server1.Stop(Seconds(30.0));
+    server1.Stop(Seconds(150.0));
 
     // Application 2 (port 7000, weight 200)
     OnOffHelper onOff2("ns3::UdpSocketFactory", InetSocketAddress(if12.GetAddress(1), port2));
@@ -98,7 +98,7 @@ int main(int argc, char* argv[]) {
     PacketSinkHelper sink2("ns3::UdpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), port2));
     ApplicationContainer server2 = sink2.Install(nodes.Get(2));
     server2.Start(Seconds(0.0));
-    server2.Stop(Seconds(30.0));
+    server2.Stop(Seconds(150.0));
 
     // Application 3 (port 9000, weight 300)
     OnOffHelper onOff3("ns3::UdpSocketFactory", InetSocketAddress(if12.GetAddress(1), port3));
@@ -113,7 +113,7 @@ int main(int argc, char* argv[]) {
     PacketSinkHelper sink3("ns3::UdpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), port3));
     ApplicationContainer server3 = sink3.Install(nodes.Get(2));
     server3.Start(Seconds(0.0));
-    server3.Stop(Seconds(30.0));
+    server3.Stop(Seconds(150.0));
 
     // Trace packet transmissions and receptions
     client1.Get(0)->TraceConnectWithoutContext("Tx", MakeCallback(&PacketSentCallback));
@@ -132,7 +132,7 @@ int main(int argc, char* argv[]) {
     Ptr<FlowMonitor> monitor = flowmonHelper.InstallAll();
 
     // Run simulation
-    Simulator::Stop(Seconds(30.0));
+    Simulator::Stop(Seconds(150.0));
     Simulator::Run();
     Simulator::Destroy();
 

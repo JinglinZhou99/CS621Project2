@@ -33,10 +33,10 @@ int main(int argc, char* argv[]) {
     PointToPointHelper p2p;
     p2p.SetDeviceAttribute("DataRate", StringValue("4Mbps"));
     p2p.SetChannelAttribute("Delay", StringValue("2ms"));
-    NetDeviceContainer dev01 = p2p.Install(nodes.Get(0), nodes.Get(1)); // Host1 to Router
+    NetDeviceContainer dev01 = p2p.Install(nodes.Get(0), nodes.Get(1));
 
     p2p.SetDeviceAttribute("DataRate", StringValue("1Mbps"));
-    NetDeviceContainer dev12 = p2p.Install(nodes.Get(1), nodes.Get(2)); // Router to Host2
+    NetDeviceContainer dev12 = p2p.Install(nodes.Get(1), nodes.Get(2));
 
     // Install Internet stack
     InternetStackHelper stack;
@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
     OnOffHelper onOffLow("ns3::UdpSocketFactory", InetSocketAddress(if12.GetAddress(1), portLow));
     onOffLow.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
     onOffLow.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
-    onOffLow.SetAttribute("DataRate", StringValue("4Mbps")); // Send at a rate higher than link capacity to ensure saturation
+    onOffLow.SetAttribute("DataRate", StringValue("4Mbps"));
     onOffLow.SetAttribute("PacketSize", UintegerValue(1024));
     ApplicationContainer clientLow = onOffLow.Install(nodes.Get(0));
     clientLow.Start(Seconds(1.0));
@@ -82,22 +82,22 @@ int main(int argc, char* argv[]) {
     PacketSinkHelper sinkLow("ns3::UdpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), portLow));
     ApplicationContainer serverLow = sinkLow.Install(nodes.Get(2));
     serverLow.Start(Seconds(0.0));
-    serverLow.Stop(Seconds(30.0));
+    serverLow.Stop(Seconds(150.0));
 
-    // Application High Priority (port 9000, starts at t=14, stops at t=17)
+    // Application High Priority (port 9000, starts at t=14, stops at t=30)
     OnOffHelper onOffHigh("ns3::UdpSocketFactory", InetSocketAddress(if12.GetAddress(1), portHigh));
     onOffHigh.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
     onOffHigh.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
-    onOffHigh.SetAttribute("DataRate", StringValue("4Mbps")); // Send at a rate higher than link capacity to ensure saturation
+    onOffHigh.SetAttribute("DataRate", StringValue("4Mbps"));
     onOffHigh.SetAttribute("PacketSize", UintegerValue(1024));
     ApplicationContainer clientHigh = onOffHigh.Install(nodes.Get(0));
     clientHigh.Start(Seconds(14.0));
-    clientHigh.Stop(Seconds(17.0));
+    clientHigh.Stop(Seconds(30.0));
 
     PacketSinkHelper sinkHigh("ns3::UdpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), portHigh));
     ApplicationContainer serverHigh = sinkHigh.Install(nodes.Get(2));
     serverHigh.Start(Seconds(0.0));
-    serverHigh.Stop(Seconds(30.0));
+    serverHigh.Stop(Seconds(150.0));
 
     // Trace packet transmissions and receptions
     clientLow.Get(0)->TraceConnectWithoutContext("Tx", MakeCallback(&PacketSentCallback));
@@ -106,15 +106,15 @@ int main(int argc, char* argv[]) {
     serverHigh.Get(0)->TraceConnectWithoutContext("Rx", MakeCallback(&PacketReceivedCallback));
 
     // Enable PCAP tracing
-    p2p.EnablePcap("prespq", dev01.Get(0)); // Packets entering the router (Host1 to Router)
-    p2p.EnablePcap("postspq", dev12.Get(1)); // Packets leaving the router (Router to Host2)
+    p2p.EnablePcap("prespq", dev01.Get(0));
+    p2p.EnablePcap("postspq", dev12.Get(1));
 
     // Install FlowMonitor
     FlowMonitorHelper flowmonHelper;
     Ptr<FlowMonitor> monitor = flowmonHelper.InstallAll();
 
     // Run simulation
-    Simulator::Stop(Seconds(30.0));
+    Simulator::Stop(Seconds(150.0));
     Simulator::Run();
     Simulator::Destroy();
 
