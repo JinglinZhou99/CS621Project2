@@ -106,8 +106,8 @@ int main(int argc, char* argv[]) {
     serverHigh.Get(0)->TraceConnectWithoutContext("Rx", MakeCallback(&PacketReceivedCallback));
 
     // Enable PCAP tracing
-    p2p.EnablePcap("prespq", dev01.Get(1)); // Packets entering the router (Host1 to Router)
-    p2p.EnablePcap("postspq", dev12.Get(0)); // Packets leaving the router (Router to Host2)
+    p2p.EnablePcap("prespq", dev01.Get(0)); // Packets entering the router (Host1 to Router)
+    p2p.EnablePcap("postspq", dev12.Get(1)); // Packets leaving the router (Router to Host2)
 
     // Install FlowMonitor
     FlowMonitorHelper flowmonHelper;
