@@ -124,8 +124,8 @@ int main(int argc, char* argv[]) {
     server3.Get(0)->TraceConnectWithoutContext("Rx", MakeCallback(&PacketReceivedCallback));
 
     // Enable PCAP tracing
-    p2p.EnablePcap("predrr", dev01.Get(1));
-    p2p.EnablePcap("postdrr", dev12.Get(0));
+    p2p.EnablePcap("predrr", dev01.Get(0));
+    p2p.EnablePcap("postdrr", dev12.Get(1));
 
     // Install FlowMonitor
     FlowMonitorHelper flowmonHelper;
