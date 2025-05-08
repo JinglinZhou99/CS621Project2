@@ -4,7 +4,7 @@
 #include "diffserv.h"
 #include "traffic-class.h"
 #include "ns3/ptr.h"
-#include <utility> // For std::pair
+#include <utility>
 
 namespace ns3 {
 

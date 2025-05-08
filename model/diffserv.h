@@ -4,7 +4,7 @@
 #include "ns3/queue.h"
 #include "traffic-class.h"
 #include <vector>
-#include <utility> // For std::pair
+#include <utility>
 
 namespace ns3 {
 
@@ -27,7 +27,7 @@ protected:
     Ptr<Packet> DoRemove();
     Ptr<const Packet> DoPeek() const;
 
-    std::vector<Ptr<TrafficClass>> q_class; // Uses Ptr for memory management
+    std::vector<Ptr<TrafficClass>> q_class;
 };
 
 } // namespace ns3

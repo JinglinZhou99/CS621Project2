@@ -9,7 +9,7 @@
 
 namespace ns3 {
 
-class TrafficClass : public Object { // Inherit from Object
+class TrafficClass : public Object {
 public:
     TrafficClass();
     ~TrafficClass() override;
@@ -25,8 +25,8 @@ public:
 
     void SetMaxPackets(uint32_t mp);
     uint32_t GetMaxPackets();
-    void SetWeight(uint32_t w); // Updated to uint32_t
-    uint32_t GetWeight();       // Updated to uint32_t
+    void SetWeight(uint32_t w);
+    uint32_t GetWeight();
     void SetPriorityLevel(uint32_t pl);
     uint32_t GetPriorityLevel();
     void SetDefault(bool d);

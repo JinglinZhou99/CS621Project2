@@ -10,15 +10,15 @@
 
 namespace ns3 {
 
-class FilterElement : public Object { // Inherit from Object
+class FilterElement : public Object {
 public:
-    static TypeId GetTypeId(void); // Add type system support
+    static TypeId GetTypeId(void);
     virtual bool match(Ptr<Packet> p) const = 0;
 };
 
 class SrcIPAddress : public FilterElement {
 public:
-    static TypeId GetTypeId(void); // Add type system support
+    static TypeId GetTypeId(void);
     SrcIPAddress(Ipv4Address addr);
     bool match(Ptr<Packet> p) const override;
 
@@ -28,7 +28,7 @@ private:
 
 class SrcMask : public FilterElement {
 public:
-    static TypeId GetTypeId(void); // Add type system support
+    static TypeId GetTypeId(void);
     SrcMask(Ipv4Address addr, Ipv4Mask mask);
     bool match(Ptr<Packet> p) const override;
 
@@ -39,7 +39,7 @@ private:
 
 class SrcPortNumber : public FilterElement {
 public:
-    static TypeId GetTypeId(void); // Add type system support
+    static TypeId GetTypeId(void);
     SrcPortNumber(uint32_t port);
     bool match(Ptr<Packet> p) const override;
 
@@ -49,7 +49,7 @@ private:
 
 class DstIPAddress : public FilterElement {
 public:
-    static TypeId GetTypeId(void); // Add type system support
+    static TypeId GetTypeId(void);
     DstIPAddress(Ipv4Address addr);
     bool match(Ptr<Packet> p) const override;
 
@@ -59,7 +59,7 @@ private:
 
 class DstMask : public FilterElement {
 public:
-    static TypeId GetTypeId(void); // Add type system support
+    static TypeId GetTypeId(void);
     DstMask(Ipv4Address addr, Ipv4Mask mask);
     bool match(Ptr<Packet> p) const override;
 
@@ -70,7 +70,7 @@ private:
 
 class DstPortNumber : public FilterElement {
 public:
-    static TypeId GetTypeId(void); // Add type system support
+    static TypeId GetTypeId(void);
     DstPortNumber(uint32_t port);
     bool match(Ptr<Packet> p) const override;
 
@@ -80,7 +80,7 @@ private:
 
 class ProtocolNumber : public FilterElement {
 public:
-    static TypeId GetTypeId(void); // Add type system support
+    static TypeId GetTypeId(void);
     ProtocolNumber(uint32_t protocol);
     bool match(Ptr<Packet> p) const override;
 
