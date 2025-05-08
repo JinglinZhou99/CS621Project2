@@ -1,6 +1,6 @@
 #include "drr.h"
 #include "ns3/string.h"
-#include "ns3/simulator.h" // Added to use Simulator::Now()
+#include "ns3/simulator.h"
 #include <fstream>
 #include <sstream>
 
@@ -20,16 +20,14 @@ DRR::DRR() : currentQueue(0) {
 }
 
 DRR::~DRR() {
-    // No manual cleanup needed; Ptr<TrafficClass> handles memory management
 }
-/**
+
 std::pair<uint32_t, Ptr<const Packet>> DRR::Schedule(void) {
     if (q_class.empty()) {
         std::cout << "DRR::Schedule: No queues available" << std::endl;
         return {q_class.size(), nullptr};
     }
 
-    // Keep trying until a packet is scheduled or all queues are empty
     bool anyQueueNonEmpty = true;
     while (anyQueueNonEmpty) {
         anyQueueNonEmpty = false;
@@ -45,76 +43,17 @@ std::pair<uint32_t, Ptr<const Packet>> DRR::Schedule(void) {
                     currentQueue = (currentQueue + 1) % q_class.size();
                     continue;
                 }
-                // Ensure deficit is sufficient by adding quantum until it is
-                while (deficits[currentQueue] < peekedPacket->GetSize()) {
-                    deficits[currentQueue] += queue->GetWeight();
-                    std::cout << "DRR::Schedule: Insufficient deficit for queue " << currentQueue 
-                              << ", added quantum, new deficit=" << deficits[currentQueue] << std::endl;
-                }
-                deficits[currentQueue] -= peekedPacket->GetSize();
-                uint32_t scheduledQueue = currentQueue;
-                currentQueue = (currentQueue + 1) % q_class.size();
-                std::cout << "DRR::Schedule: Scheduled packet from queue " << scheduledQueue 
-                          << ", size=" << peekedPacket->GetSize() << ", new deficit=" << deficits[scheduledQueue] 
-                          << ", weight=" << queue->GetWeight() << std::endl;
-                return {scheduledQueue, peekedPacket};
-            } else {
-                // Reset deficit for empty queues to ensure fairness
-                deficits[currentQueue] = 0;
-                std::cout << "DRR::Schedule: Queue " << currentQueue << " is empty, deficit reset to 0" << std::endl;
-            }
-            currentQueue = (currentQueue + 1) % q_class.size();
-        } while (currentQueue != startQueue);
-
-        if (!anyQueueNonEmpty) {
-            std::cout << "DRR::Schedule: All queues empty after full round" << std::endl;
-            break;
-        }
-    }
-
-    std::cout << "DRR::Schedule: No packet scheduled (all queues empty)" << std::endl;
-    return {q_class.size(), nullptr};
-}
-*/
-std::pair<uint32_t, Ptr<const Packet>> DRR::Schedule(void) {
-    if (q_class.empty()) {
-        std::cout << "DRR::Schedule: No queues available" << std::endl;
-        return {q_class.size(), nullptr};
-    }
-
-    // Keep trying until a packet is scheduled or all queues are empty
-    bool anyQueueNonEmpty = true;
-    while (anyQueueNonEmpty) {
-        anyQueueNonEmpty = false;
-        uint32_t startQueue = currentQueue;
-        std::cout << "DRR::Schedule: Starting at queue " << startQueue << std::endl;
-        do {
-            Ptr<TrafficClass> queue = q_class[currentQueue];
-            if (!queue->IsEmpty()) {
-                anyQueueNonEmpty = true;
-                Ptr<const Packet> peekedPacket = queue->Peek();
-                if (!peekedPacket) {
-                    std::cout << "DRR::Schedule: Peek returned nullptr for queue " << currentQueue << std::endl;
-                    currentQueue = (currentQueue + 1) % q_class.size();
-                    continue;
-                }
-                // —— DRR 正式逻辑 ——  
-                // 1) 本次轮到就先加一次量子
                 deficits[currentQueue] += queue->GetWeight();
                 std::cout << "DRR::Schedule: Added quantum for queue " << currentQueue 
                           << ", new deficit=" << deficits[currentQueue] << std::endl;
 
-                // 2) 只有当累计的 deficit 够发一个包时才真正 schedule
                 if (deficits[currentQueue] < peekedPacket->GetSize()) {
-                    // 不够就跳到下一个队列，继续找
                     currentQueue = (currentQueue + 1) % q_class.size();
                     continue;
                 }
-                // 够了就扣掉包大小
                 deficits[currentQueue] -= peekedPacket->GetSize();
                 uint32_t scheduledQueue = currentQueue;
 
-                // 3) 如果扣完后已经不足以再发下一个包，就下次切队
                 Ptr<TrafficClass> nextQ = q_class[scheduledQueue];
                 uint32_t nextSize = nextQ->IsEmpty() ? 0 : nextQ->Peek()->GetSize();
                 if (deficits[scheduledQueue] < nextSize) {
@@ -127,7 +66,6 @@ std::pair<uint32_t, Ptr<const Packet>> DRR::Schedule(void) {
                           << ", weight=" << queue->GetWeight() << std::endl;
                 return {scheduledQueue, peekedPacket};
             } else {
-                // Reset deficit for empty queues to ensure fairness
                 deficits[currentQueue] = 0;
                 std::cout << "DRR::Schedule: Queue " << currentQueue << " is empty, deficit reset to 0" << std::endl;
             }
@@ -151,9 +89,8 @@ uint32_t DRR::Classify(Ptr<Packet> p) {
             return i;
         }
     }
-    // Drop packets that don't match any queue (no default queue usage)
     std::cout << "DRR::Classify: Packet dropped (no matching queue)" << std::endl;
-    return q_class.size(); // No match, return invalid index to drop the packet
+    return q_class.size();
 }
 
 bool DRR::ReadConfigFile(std::string filename) {
@@ -170,7 +107,7 @@ bool DRR::ReadConfigFile(std::string filename) {
     }
     file.close();
 
-    deficits.resize(q_class.size(), 0); // Initialize deficits
+    deficits.resize(q_class.size(), 0);
     std::cout << "DRR::ReadConfigFile: Configured " << q_class.size() << " queues" << std::endl;
     return true;
 }
@@ -213,7 +150,7 @@ void DRR::ParseConfigLine(const std::string& line) {
                           << ", type=" << filterType << ", value=" << value << std::endl;
             } else {
                 std::cerr << "DRR::ParseConfigLine: Invalid queueId " << queueId << " for filter" << std::endl;
-                delete filter; // Avoid memory leak if queueId is invalid
+                delete filter;
             }
         }
     }

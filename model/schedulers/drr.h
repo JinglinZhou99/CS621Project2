@@ -5,7 +5,7 @@
 #include "traffic-class.h"
 #include "ns3/ptr.h"
 #include <vector>
-#include <utility> // For std::pair
+#include <utility>
 
 namespace ns3 {
 
