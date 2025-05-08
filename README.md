@@ -24,6 +24,14 @@ Clone Github project using HTTPS
 git clone https://github.com/JinglinZhou99/CS621Project2.git
 ```
 
+Or download in NS-3 'src' directory, folder structure should look like this:
+
+```bash
+~/ns-allinone-3.44/ns-3.44/src/CS621Project2
+```
+
+Now, model folder, pcap folder, README.md and CMakeLists.txt are all in 'CS621Project2'
+
 ### Build & Run
 
 Navigate to the NS-3 directory
