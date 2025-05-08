@@ -1,5 +1,7 @@
 # CS621 Project2
 
+By: Jinglin Zhou, Shijie Xu
+
 ## NS-3 Project Setup and Working Guide
 
 ### Prerequisites
@@ -50,8 +52,11 @@ Run the simulation program (both spq and drr)
 ./ns3 run drr-simulation -- src/CS621Project2/model/drr-config.txt
 ```
 
-Now the output pcap files will be in this directory: ns-3.44/
-And use the Wireshark to open the pcap file and display the graph.
+Now the output pcap files will be in NS-3 directory: ~/ns-allinone-3.44/ns-3.44/
+
+There are 4 pcap files: prespq-0-0.pcap, postspq-2-0.pcap, predrr-0-0.pcap, postdrr-2-0.pcap
+
+And we can use the Wireshark to open the pcap files and display the graph.
 
 ### Working with Branches
 
