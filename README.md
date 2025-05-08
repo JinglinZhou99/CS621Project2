@@ -1,6 +1,6 @@
 # CS621 Project2
 
-## NS-3 Integration Setup Guide
+## NS-3 Project Setup and Working Guide
 
 ### Prerequisites
 
@@ -8,7 +8,7 @@
 - Git installed
 - Internet access from VM
 
-### Step-by-Step Instructions
+### Setup Instructions
 
 Navigate to the NS-3 'src' directory
 
@@ -60,7 +60,7 @@ After editing or adding files, follow these steps to create a new branch, commit
 1. Make sure you're inside the project directory
 
 ```bash
-cd ~/ns-allinone-3.44/ns-3.44/ns-3-dev/src/CS621/CS621Project2
+cd ~/ns-allinone-3.44/ns-3.44/src/CS621Project2
 ```
 
 2. Create and switch to a new branch (e.g., dev)
