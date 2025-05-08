@@ -18,42 +18,11 @@ void PacketReceivedCallback(Ptr<const Packet> packet, const Address &address) {
               << " bytes, from address " << address << std::endl;
 }
 
-void CalculateThroughput(Ptr<FlowMonitor> monitor, FlowMonitorHelper& flowmonHelper, std::ofstream& outFile, Time interval) {
-    monitor->CheckForLostPackets();
-    auto flowStats = monitor->GetFlowStats();
-    std::cout << "CalculateThroughput called at time: " << Simulator::Now().GetSeconds() << "s, flows: " << flowStats.size() << std::endl;
-
-    // Map of flow ID to destination port for filtering
-    std::map<uint32_t, uint16_t> flowToPort;
-    for (auto it = flowStats.begin(); it != flowStats.end(); ++it) {
-        FlowId flowId = it->first;
-        Ptr<FlowClassifier> classifier = flowmonHelper.GetClassifier();
-        Ipv4FlowClassifier::FiveTuple tuple = dynamic_cast<Ipv4FlowClassifier*>(&(*classifier))->FindFlow(flowId);
-        flowToPort[flowId] = tuple.destinationPort;
-    }
-
-    for (auto it = flowStats.begin(); it != flowStats.end(); ++it) {
-        uint32_t flowId = it->first;
-        uint16_t dstPort = flowToPort[flowId];
-        // Only process flows with destination ports 7000 or 9000
-        if (dstPort != 7000 && dstPort != 9000) {
-            continue;
-        }
-        double throughput = (it->second.rxBytes * 8.0) / (it->second.timeLastRxPacket.GetSeconds() - it->second.timeFirstTxPacket.GetSeconds()) / 1e6;
-        std::cout << "Flow " << flowId << " (dstPort=" << dstPort << "): rxBytes=" << it->second.rxBytes 
-                  << ", timeLastRx=" << it->second.timeLastRxPacket.GetSeconds() 
-                  << ", timeFirstTx=" << it->second.timeFirstTxPacket.GetSeconds() 
-                  << ", throughput=" << throughput << " Mbps" << std::endl;
-        outFile << Simulator::Now().GetSeconds() << " " << flowId << " " << throughput << std::endl;
-    }
-    Simulator::Schedule(interval, &CalculateThroughput, monitor, std::ref(flowmonHelper), std::ref(outFile), interval);
-}
-
 int main(int argc, char* argv[]) {
     // Parse command-line arguments for config file
-    std::string configFile = "spq-config.txt"; // Default config file
+    std::string configFile = "spq-config.txt";
     if (argc > 1) {
-        configFile = argv[1]; // Use the config file path passed via command line
+        configFile = argv[1];
     }
 
     // Create nodes
@@ -97,8 +66,8 @@ int main(int argc, char* argv[]) {
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
     // Install applications
-    uint16_t portLow = 7000;  // Low priority
-    uint16_t portHigh = 9000; // High priority
+    uint16_t portLow = 7000;
+    uint16_t portHigh = 9000;
 
     // Application Low Priority (port 7000, starts at t=1)
     OnOffHelper onOffLow("ns3::UdpSocketFactory", InetSocketAddress(if12.GetAddress(1), portLow));
@@ -144,19 +113,10 @@ int main(int argc, char* argv[]) {
     FlowMonitorHelper flowmonHelper;
     Ptr<FlowMonitor> monitor = flowmonHelper.InstallAll();
 
-    // Open output file for throughput
-    std::ofstream outFile("spq-throughput.txt");
-    if (!outFile.is_open()) {
-        std::cerr << "Failed to open spq-throughput.txt" << std::endl;
-        return 1;
-    }
-    Simulator::Schedule(Seconds(1.0), &CalculateThroughput, monitor, std::ref(flowmonHelper), std::ref(outFile), Seconds(1.0));
-
     // Run simulation
     Simulator::Stop(Seconds(30.0));
     Simulator::Run();
     Simulator::Destroy();
 
-    outFile.close();
     return 0;
 }

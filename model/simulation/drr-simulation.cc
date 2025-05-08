@@ -18,47 +18,16 @@ void PacketReceivedCallback(Ptr<const Packet> packet, const Address &address) {
               << " bytes, from address " << address << std::endl;
 }
 
-void CalculateThroughput(Ptr<FlowMonitor> monitor, FlowMonitorHelper& flowmonHelper, std::ofstream& outFile, Time interval) {
-    monitor->CheckForLostPackets();
-    auto flowStats = monitor->GetFlowStats();
-    std::cout << "CalculateThroughput called at time: " << Simulator::Now().GetSeconds() << "s, flows: " << flowStats.size() << std::endl;
-
-    // Map of flow ID to destination port for filtering
-    std::map<uint32_t, uint16_t> flowToPort;
-    for (auto it = flowStats.begin(); it != flowStats.end(); ++it) {
-        FlowId flowId = it->first;
-        Ptr<FlowClassifier> classifier = flowmonHelper.GetClassifier();
-        Ipv4FlowClassifier::FiveTuple tuple = dynamic_cast<Ipv4FlowClassifier*>(&(*classifier))->FindFlow(flowId);
-        flowToPort[flowId] = tuple.destinationPort;
-    }
-
-    for (auto it = flowStats.begin(); it != flowStats.end(); ++it) {
-        uint32_t flowId = it->first;
-        uint16_t dstPort = flowToPort[flowId];
-        // Only process flows with destination ports 6000, 7000, or 9000
-        if (dstPort != 6000 && dstPort != 7000 && dstPort != 9000) {
-            continue;
-        }
-        double throughput = (it->second.rxBytes * 8.0) / (it->second.timeLastRxPacket.GetSeconds() - it->second.timeFirstTxPacket.GetSeconds()) / 1e6;
-        std::cout << "Flow " << flowId << " (dstPort=" << dstPort << "): rxBytes=" << it->second.rxBytes 
-                  << ", timeLastRx=" << it->second.timeLastRxPacket.GetSeconds() 
-                  << ", timeFirstTx=" << it->second.timeFirstTxPacket.GetSeconds() 
-                  << ", throughput=" << throughput << " Mbps" << std::endl;
-        outFile << Simulator::Now().GetSeconds() << " " << flowId << " " << throughput << std::endl;
-    }
-    Simulator::Schedule(interval, &CalculateThroughput, monitor, std::ref(flowmonHelper), std::ref(outFile), interval);
-}
-
 int main(int argc, char* argv[]) {
     // Parse command-line arguments for config file
-    std::string configFile = "drr-config.txt"; // Default config file
+    std::string configFile = "drr-config.txt";
     if (argc > 1) {
-        configFile = argv[1]; // Use the config file path passed via command line
+        configFile = argv[1];
     }
 
     // Create nodes
     NodeContainer nodes;
-    nodes.Create(3); // Two end-hosts and one router
+    nodes.Create(3);
 
     // Create point-to-point links
     PointToPointHelper p2p;
@@ -105,7 +74,7 @@ int main(int argc, char* argv[]) {
     OnOffHelper onOff1("ns3::UdpSocketFactory", InetSocketAddress(if12.GetAddress(1), port1));
     onOff1.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
     onOff1.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
-    onOff1.SetAttribute("DataRate", StringValue("2Mbps")); // Send at a rate higher than link capacity to ensure saturation
+    onOff1.SetAttribute("DataRate", StringValue("2Mbps"));
     onOff1.SetAttribute("PacketSize", UintegerValue(1024));
     ApplicationContainer client1 = onOff1.Install(nodes.Get(0));
     client1.Start(Seconds(1.0));
@@ -155,26 +124,17 @@ int main(int argc, char* argv[]) {
     server3.Get(0)->TraceConnectWithoutContext("Rx", MakeCallback(&PacketReceivedCallback));
 
     // Enable PCAP tracing
-    p2p.EnablePcap("predrr", dev01.Get(1)); // Packets entering the router (Host1 to Router)
-    p2p.EnablePcap("postdrr", dev12.Get(0)); // Packets leaving the router (Router to Host2)
+    p2p.EnablePcap("predrr", dev01.Get(1));
+    p2p.EnablePcap("postdrr", dev12.Get(0));
 
     // Install FlowMonitor
     FlowMonitorHelper flowmonHelper;
     Ptr<FlowMonitor> monitor = flowmonHelper.InstallAll();
-
-    // Open output file for throughput
-    std::ofstream outFile("drr-throughput.txt");
-    if (!outFile.is_open()) {
-        std::cerr << "Failed to open drr-throughput.txt" << std::endl;
-        return 1;
-    }
-    Simulator::Schedule(Seconds(5.0), &CalculateThroughput, monitor, std::ref(flowmonHelper), std::ref(outFile), Seconds(1.0));
 
     // Run simulation
     Simulator::Stop(Seconds(30.0));
     Simulator::Run();
     Simulator::Destroy();
 
-    outFile.close();
     return 0;
 }
